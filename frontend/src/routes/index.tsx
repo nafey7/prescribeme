@@ -16,6 +16,14 @@ import PrescriptionHistory from '../components/pages/doctor/PrescriptionHistory'
 import EditPrescription from '../components/pages/doctor/EditPrescription';
 import DoctorSettings from '../components/pages/doctor/DoctorSettings';
 
+// Patient pages
+import PatientDashboard from '../components/pages/patient/PatientDashboard';
+import MyPrescriptions from '../components/pages/patient/MyPrescriptions';
+import PrescriptionDetail from '../components/pages/patient/PrescriptionDetail';
+import DoctorList from '../components/pages/patient/DoctorList';
+import MedicalHistory from '../components/pages/patient/MedicalHistory';
+import PatientSettings from '../components/pages/patient/PatientSettings';
+
 const routes: RouteObject[] = [
   {
     path: '/',
@@ -50,7 +58,7 @@ const routes: RouteObject[] = [
         path: 'doctor-settings',
         element: <DoctorSettings />,
       },
-      // Patient management routes
+      // Patient management routes (for doctors)
       {
         path: 'patients',
         element: <PatientList />,
@@ -59,7 +67,7 @@ const routes: RouteObject[] = [
         path: 'patients/:patientId',
         element: <PatientProfile />,
       },
-      // Prescription management routes
+      // Prescription management routes (for doctors)
       {
         path: 'prescriptions',
         element: <PrescriptionHistory />,
@@ -71,6 +79,37 @@ const routes: RouteObject[] = [
       {
         path: 'prescriptions/:prescriptionId/edit',
         element: <EditPrescription />,
+      },
+    ],
+  },
+  // Patient routes
+  {
+    path: '/patient',
+    element: <Layout />,
+    children: [
+      {
+        index: true,
+        element: <PatientDashboard />,
+      },
+      {
+        path: 'prescriptions',
+        element: <MyPrescriptions />,
+      },
+      {
+        path: 'prescriptions/:prescriptionId',
+        element: <PrescriptionDetail />,
+      },
+      {
+        path: 'doctors',
+        element: <DoctorList />,
+      },
+      {
+        path: 'medical-history',
+        element: <MedicalHistory />,
+      },
+      {
+        path: 'settings',
+        element: <PatientSettings />,
       },
     ],
   },
