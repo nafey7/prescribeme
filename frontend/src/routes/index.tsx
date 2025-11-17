@@ -24,6 +24,12 @@ import DoctorList from '../components/pages/patient/DoctorList';
 import MedicalHistory from '../components/pages/patient/MedicalHistory';
 import PatientSettings from '../components/pages/patient/PatientSettings';
 
+// Shared pages
+import Notifications from '../components/pages/shared/Notifications';
+import Help from '../components/pages/shared/Help';
+import Terms from '../components/pages/shared/Terms';
+import Privacy from '../components/pages/shared/Privacy';
+
 const routes: RouteObject[] = [
   {
     path: '/',
@@ -36,6 +42,14 @@ const routes: RouteObject[] = [
   {
     path: '/signup',
     element: <SignUp />,
+  },
+  {
+    path: '/terms',
+    element: <Terms />,
+  },
+  {
+    path: '/privacy',
+    element: <Privacy />,
   },
   {
     path: '/dashboard',
@@ -80,6 +94,15 @@ const routes: RouteObject[] = [
         path: 'prescriptions/:prescriptionId/edit',
         element: <EditPrescription />,
       },
+      // Shared routes (for doctors)
+      {
+        path: 'notifications',
+        element: <Notifications />,
+      },
+      {
+        path: 'help',
+        element: <Help />,
+      },
     ],
   },
   // Patient routes
@@ -110,6 +133,15 @@ const routes: RouteObject[] = [
       {
         path: 'settings',
         element: <PatientSettings />,
+      },
+      // Shared routes (for patients)
+      {
+        path: 'notifications',
+        element: <Notifications />,
+      },
+      {
+        path: 'help',
+        element: <Help />,
       },
     ],
   },
