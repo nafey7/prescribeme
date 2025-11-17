@@ -1,0 +1,118 @@
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# IDE and Editor files (global)
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.project
+.pydevproject
+.settings/
+*.iml
+*.iws
+*.ipr
+.atom/
+.emacs.desktop*
+.history/
+.vimrc
+.ctags
+tags
+
+# Editor backups
+*~
+*.bak
+*.swp
+*.swo
+.~*
+*.tmp
+
+# Logs
+*.log
+logs/
+lerna-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files (root level)
+.env
+.env.local
+.env.*.local
+.env.production.local
+.env.development.local
+
+# Secrets and credentials
+secrets/
+.aws/
+.ssh/
+*.pem
+*.key
+credentials.json
+.api-keys
+
+# OS temp files
+.AppleDB
+.AppleDesktop
+Network\ Trash\ Folder
+Temporary\ Items
+.apdisk
+
+# System
+.DS_Store
+.pause
+
+# IDE plugins and cache
+.eslintcache
+.flake8
+.pylintrc
+.prettierrc.local
+
+# Dependencies (if root has any)
+node_modules/
+__pycache__/
+
+# Build artifacts (project-wide)
+dist/
+build/
+out/
+.next/
+
+# Documentation builds (if any)
+docs/_build/
+docs/site/
+
+# Cache
+.cache/
+*.cache
+.mypy_cache/
+.pytest_cache/
+
+# Testing
+coverage/
+.nyc_output/
+.jest-cache/
+.tox/
+
+# Editor temporary files
+.#*
+*#
+.~*
+
+# Turbo/Monorepo tools
+.turbo/
+
+# Docker (if using compose overrides)
+docker-compose.override.yml
+
+# Git
+.gitkeep

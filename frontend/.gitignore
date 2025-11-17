@@ -1,0 +1,151 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+.env.production.local
+.env.development.local
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.nuxt/
+
+# IDE and Editors
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+.project
+.pydevproject
+.settings/
+*.iml
+*.iws
+*.ipr
+
+# Testing
+coverage/
+.nyc_output/
+.jest-cache/
+*.lcov
+.mocha.json
+
+# Logs
+npm-debug.log*
+npm-error.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+*.log
+pnpm-debug.log*
+
+# OS specific
+.DS_Store
+.DS_Store?
+._*
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# System files
+*.bak
+*.tmp
+*.swp
+.~*
+
+# Mac
+.AppleDouble
+.LSOverride
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+$RECYCLE.BIN/
+ehthumbs.db
+Thumbs.db
+
+# Cache directories
+.cache/
+*.cache
+.eslintcache
+.eslint-cache
+
+# Temporary files
+temp/
+tmp/
+*.temp
+*.tmp
+
+# Editor backups
+*.bak~
+*.swp
+*.swo
+*~
+.#*
+
+# IDE specific
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+
+# Node/npm specific
+.npm
+.eslintcache
+.node_repl_history
+*.tgz
+.yarn-integrity
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Vite specific
+.vite/
+
+# Docker
+.dockerignore
+
+# Git
+.git/
+.gitkeep
+
+# Misc
+.env*.local
+.turbo/
+dist-ssr/
+*.local
+
+# Secrets and credentials
+.aws/credentials
+.aws/config
+.ssh/
+*.pem
+*.key
+credentials.json
+secrets.json
+
+# Production
+.firebase/
+.firebaserc
+firebase-debug.log*
+
+# Development
+.prettierignore
+.editorconfig.local

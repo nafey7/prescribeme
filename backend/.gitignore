@@ -1,0 +1,198 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual Environments
+venv/
+ENV/
+env/
+.venv
+env.bak/
+venv.bak/
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+.env.production.local
+.env.development.local
+
+# IDE and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+.project
+.pydevproject
+.settings/
+*.iml
+*.iws
+*.ipr
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.hypothesis/
+*.cover
+.nox/
+.pytest/
+
+# Django/Flask
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+/media
+/staticfiles
+instance/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# FastAPI
+__pycache__
+
+# Documentation
+docs/_build/
+docs/site/
+site/
+
+# VS Code
+.vscode/settings.json
+
+# Mac
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# System files
+*.bak
+*.tmp
+*.swp
+.~*
+
+# Node modules (if used for build tools)
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# OS specific
+.env.*.swp
+.env.*.swo
+
+# Docker
+.dockerignore
+
+# Secrets and credentials
+secrets/
+.aws/credentials
+.aws/config
+.ssh/
+*.pem
+*.key
+credentials.json
+
+# Build outputs
+*.whl
+*.tar.gz
+*.zip
+build/dist/
+
+# Database files (if using SQLite locally)
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# Migrations (optional - uncomment if you don't want version control)
+# migrations/versions/
+
+# Cache directories
+.cache/
+*.cache
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# IDE temporary files
+.vimrc
+.ctags
+tags
+.env.local.swp
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb
+
+# Poetry
+poetry.lock
+
+# Pipenv
+Pipfile.lock
+
+# pdm
+.pdm.toml
+
+# Ruff cache
+.ruff_cache/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# IDE plugins
+.flake8
+.pylintrc
+
+# Application specific
+*.pid
+*.seed
+*.pid.lock
+
+# Temporary test files
+test_*.py
+*_test.py
+
+# Local development
+.env.*.local
+local_*.py
+
+# Uploads
+/uploads
+/tmp
+/temp
