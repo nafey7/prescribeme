@@ -1,13 +1,13 @@
 import React from 'react';
 import AuthLayout from '../layout/AuthLayout';
-import LoginForm from '../auth/LoginForm';
+import SignUpForm from '../auth/SignUpForm';
 
-const Login: React.FC = () => {
+const SignUp: React.FC = () => {
   return (
     <AuthLayout>
-      <LoginForm />
+      <SignUpForm />
     </AuthLayout>
   );
 };
 
-export default Login;
+export default SignUp;
