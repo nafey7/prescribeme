@@ -8,6 +8,14 @@ import Login from '../components/pages/Login';
 import SignUp from '../components/pages/SignUp';
 import Home from '../components/pages/Home';
 
+// Doctor pages
+import PatientList from '../components/pages/doctor/PatientList';
+import PatientProfile from '../components/pages/doctor/PatientProfile';
+import CreatePrescription from '../components/pages/doctor/CreatePrescription';
+import PrescriptionHistory from '../components/pages/doctor/PrescriptionHistory';
+import EditPrescription from '../components/pages/doctor/EditPrescription';
+import DoctorSettings from '../components/pages/doctor/DoctorSettings';
+
 const routes: RouteObject[] = [
   {
     path: '/',
@@ -36,6 +44,33 @@ const routes: RouteObject[] = [
       {
         path: 'settings',
         element: <Settings />,
+      },
+      // Doctor routes
+      {
+        path: 'doctor-settings',
+        element: <DoctorSettings />,
+      },
+      // Patient management routes
+      {
+        path: 'patients',
+        element: <PatientList />,
+      },
+      {
+        path: 'patients/:patientId',
+        element: <PatientProfile />,
+      },
+      // Prescription management routes
+      {
+        path: 'prescriptions',
+        element: <PrescriptionHistory />,
+      },
+      {
+        path: 'prescriptions/new',
+        element: <CreatePrescription />,
+      },
+      {
+        path: 'prescriptions/:prescriptionId/edit',
+        element: <EditPrescription />,
       },
     ],
   },
