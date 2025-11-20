@@ -1,17 +1,79 @@
-# OS specific files
-.DS_Store
-.DS_Store?
-._*
-.AppleDouble
-.LSOverride
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-$RECYCLE.BIN/
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
 
-# IDE and Editor files (global)
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# Node.js / JavaScript
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.npm
+.eslintcache
+.eslint-cache
+.node_repl_history
+*.tgz
+.yarn-integrity
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+.yarn-integrity
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.nuxt/
+dist-ssr/
+
+# Vite
+.vite/
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+.env.production.local
+.env.development.local
+
+# IDE and Editors
 .vscode/
 .idea/
+.atom/
+.emacs.desktop*
+.history/
+.vimrc
+.ctags
+tags
 *.sublime-project
 *.sublime-workspace
 .project
@@ -20,12 +82,9 @@ $RECYCLE.BIN/
 *.iml
 *.iws
 *.ipr
-.atom/
-.emacs.desktop*
-.history/
-.vimrc
-.ctags
-tags
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
 
 # Editor backups
 *~
@@ -34,85 +93,95 @@ tags
 *.swo
 .~*
 *.tmp
+*.bak~
+.#*
+*#
+
+# OS specific
+.DS_Store
+.DS_Store?
+._*
+.AppleDouble
+.LSOverride
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
 
 # Logs
 *.log
 logs/
 lerna-debug.log*
 npm-debug.log*
+npm-error.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-
-# Environment files (root level)
-.env
-.env.local
-.env.*.local
-.env.production.local
-.env.development.local
-
-# Secrets and credentials
-secrets/
-.aws/
-.ssh/
-*.pem
-*.key
-credentials.json
-.api-keys
-
-# OS temp files
-.AppleDB
-.AppleDesktop
-Network\ Trash\ Folder
-Temporary\ Items
-.apdisk
-
-# System
-.DS_Store
-.pause
-
-# IDE plugins and cache
-.eslintcache
-.flake8
-.pylintrc
-.prettierrc.local
-
-# Dependencies (if root has any)
-node_modules/
-__pycache__/
-
-# Build artifacts (project-wide)
-dist/
-build/
-out/
-.next/
-
-# Documentation builds (if any)
-docs/_build/
-docs/site/
-
-# Cache
-.cache/
-*.cache
-.mypy_cache/
-.pytest_cache/
+firebase-debug.log*
 
 # Testing
 coverage/
 .nyc_output/
 .jest-cache/
-.tox/
+*.lcov
+.mocha.json
+htmlcov/
 
-# Editor temporary files
-.#*
-*#
-.~*
-
-# Turbo/Monorepo tools
+# Cache directories
+.cache/
+*.cache
+.eslintcache
+.eslint-cache
 .turbo/
 
-# Docker (if using compose overrides)
+# Temporary files
+temp/
+tmp/
+*.temp
+*.tmp
+
+# Secrets and credentials
+secrets/
+.aws/
+.aws/credentials
+.aws/config
+.ssh/
+*.pem
+*.key
+credentials.json
+secrets.json
+.api-keys
+
+# Docker
 docker-compose.override.yml
+.dockerignore
+
+# Firebase
+.firebase/
+.firebaserc
+
+# Development
+.prettierignore
+.prettierrc.local
+.editorconfig.local
+.flake8
+.pylintrc
+
+# Documentation builds
+docs/_build/
+docs/site/
+
+# System
+.pause
 
 # Git
 .gitkeep
+
+# Misc
+*.local
