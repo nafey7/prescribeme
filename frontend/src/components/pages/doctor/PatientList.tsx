@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { SearchBar, Table, Badge, Button } from '../../common';
-import type { Column } from '../../common/Table';
+import React, { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { SearchBar, Table, Badge, Button } from "../../common";
+import type { Column } from "../../common/Table";
+import { useApiGet } from "../../../hooks/useApi";
 
 interface Patient {
   id: string;
@@ -11,137 +12,163 @@ interface Patient {
   email: string;
   phone: string;
   lastVisit: string;
-  status: 'active' | 'inactive';
+  status: "active" | "inactive";
   conditions?: string[];
 }
 
-// Mock data - replace with actual API call
-const mockPatients: Patient[] = [
-  {
-    id: '1',
-    name: 'Sarah Johnson',
-    age: 45,
-    gender: 'Female',
-    email: 'sarah.j@email.com',
-    phone: '+1 (555) 123-4567',
-    lastVisit: '2025-11-15',
-    status: 'active',
-    conditions: ['Hypertension', 'Diabetes Type 2'],
-  },
-  {
-    id: '2',
-    name: 'Michael Chen',
-    age: 62,
-    gender: 'Male',
-    email: 'mchen@email.com',
-    phone: '+1 (555) 234-5678',
-    lastVisit: '2025-11-10',
-    status: 'active',
-    conditions: ['High Cholesterol'],
-  },
-  {
-    id: '3',
-    name: 'Emily Rodriguez',
-    age: 28,
-    gender: 'Female',
-    email: 'emily.r@email.com',
-    phone: '+1 (555) 345-6789',
-    lastVisit: '2025-10-25',
-    status: 'active',
-    conditions: ['Asthma'],
-  },
-  {
-    id: '4',
-    name: 'David Thompson',
-    age: 55,
-    gender: 'Male',
-    email: 'd.thompson@email.com',
-    phone: '+1 (555) 456-7890',
-    lastVisit: '2025-09-15',
-    status: 'inactive',
-    conditions: ['Arthritis'],
-  },
-];
+// Commented out hardcoded data - now using API
+// const mockPatients: Patient[] = [
+//   {
+//     id: '1',
+//     name: 'Sarah Johnson',
+//     age: 45,
+//     gender: 'Female',
+//     email: 'sarah.j@email.com',
+//     phone: '+1 (555) 123-4567',
+//     lastVisit: '2025-11-15',
+//     status: 'active',
+//     conditions: ['Hypertension', 'Diabetes Type 2'],
+//   },
+//   {
+//     id: '2',
+//     name: 'Michael Chen',
+//     age: 62,
+//     gender: 'Male',
+//     email: 'mchen@email.com',
+//     phone: '+1 (555) 234-5678',
+//     lastVisit: '2025-11-10',
+//     status: 'active',
+//     conditions: ['High Cholesterol'],
+//   },
+//   {
+//     id: '3',
+//     name: 'Emily Rodriguez',
+//     age: 28,
+//     gender: 'Female',
+//     email: 'emily.r@email.com',
+//     phone: '+1 (555) 345-6789',
+//     lastVisit: '2025-10-25',
+//     status: 'active',
+//     conditions: ['Asthma'],
+//   },
+//   {
+//     id: '4',
+//     name: 'David Thompson',
+//     age: 55,
+//     gender: 'Male',
+//     email: 'd.thompson@email.com',
+//     phone: '+1 (555) 456-7890',
+//     lastVisit: '2025-09-15',
+//     status: 'inactive',
+//     conditions: ['Arthritis'],
+//   },
+// ];
 
 const PatientList: React.FC = () => {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [patients] = useState<Patient[]>(mockPatients);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // Filter patients based on search query
-  const filteredPatients = patients.filter(
-    (patient) =>
-      patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      patient.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      patient.phone.includes(searchQuery)
+  // Fetch patients from API
+  const { data: patientsData, isLoading } = useApiGet<Patient[]>(
+    ["patients", searchQuery],
+    `/api/v1/doctors/patients${
+      searchQuery ? `?search=${encodeURIComponent(searchQuery)}` : ""
+    }`
   );
+
+  // Use API data or fallback to empty array
+  const patients = patientsData || [];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Loading patients...</div>
+      </div>
+    );
+  }
+
+  // Filter patients based on search query (client-side for additional filtering)
+  const filteredPatients = useMemo(() => {
+    if (!searchQuery) return patients;
+    return patients.filter(
+      (patient) =>
+        patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        patient.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (patient.phone && patient.phone.includes(searchQuery))
+    );
+  }, [patients, searchQuery]);
 
   const columns: Column<Patient>[] = [
     {
-      key: 'name',
-      header: 'Patient Name',
+      key: "name",
+      header: "Patient Name",
       render: (patient) => (
         <div className="flex items-center">
           <div className="flex-shrink-0 h-10 w-10">
             <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
               <span className="text-primary-600 font-medium text-sm">
-                {patient.name.split(' ').map(n => n[0]).join('')}
+                {patient.name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")}
               </span>
             </div>
           </div>
           <div className="ml-4">
-            <div className="text-sm font-medium text-gray-900">{patient.name}</div>
+            <div className="text-sm font-medium text-gray-900">
+              {patient.name}
+            </div>
             <div className="text-sm text-gray-500">{patient.email}</div>
           </div>
         </div>
       ),
     },
     {
-      key: 'age',
-      header: 'Age',
+      key: "age",
+      header: "Age",
       render: (patient) => (
         <span className="text-gray-900">{patient.age} yrs</span>
       ),
     },
     {
-      key: 'gender',
-      header: 'Gender',
+      key: "gender",
+      header: "Gender",
       render: (patient) => (
         <span className="text-gray-900">{patient.gender}</span>
       ),
     },
     {
-      key: 'phone',
-      header: 'Contact',
+      key: "phone",
+      header: "Contact",
       render: (patient) => (
         <span className="text-gray-900">{patient.phone}</span>
       ),
     },
     {
-      key: 'lastVisit',
-      header: 'Last Visit',
+      key: "lastVisit",
+      header: "Last Visit",
       render: (patient) => (
         <span className="text-gray-900">
-          {new Date(patient.lastVisit).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
+          {new Date(patient.lastVisit).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
           })}
         </span>
       ),
     },
     {
-      key: 'status',
-      header: 'Status',
+      key: "status",
+      header: "Status",
       render: (patient) => (
-        <Badge variant={patient.status === 'active' ? 'success' : 'default'}>
+        <Badge variant={patient.status === "active" ? "success" : "default"}>
           {patient.status}
         </Badge>
       ),
     },
     {
-      key: 'actions',
-      header: 'Actions',
+      key: "actions",
+      header: "Actions",
       render: (patient) => (
         <Button
           size="sm"
@@ -170,7 +197,7 @@ const PatientList: React.FC = () => {
         <Button
           variant="primary"
           className="btn-gradient text-white"
-          onClick={() => navigate('/dashboard/patients/new')}
+          onClick={() => navigate("/dashboard/patients/new")}
         >
           <svg
             className="w-5 h-5 mr-2 inline"
@@ -209,8 +236,12 @@ const PatientList: React.FC = () => {
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Total Patients</p>
-              <p className="text-2xl font-semibold text-gray-900">{patients.length}</p>
+              <p className="text-sm font-medium text-gray-500">
+                Total Patients
+              </p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {patients.length}
+              </p>
             </div>
           </div>
         </div>
@@ -233,9 +264,11 @@ const PatientList: React.FC = () => {
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Active Patients</p>
+              <p className="text-sm font-medium text-gray-500">
+                Active Patients
+              </p>
               <p className="text-2xl font-semibold text-gray-900">
-                {patients.filter(p => p.status === 'active').length}
+                {patients.filter((p) => p.status === "active").length}
               </p>
             </div>
           </div>
@@ -283,7 +316,9 @@ const PatientList: React.FC = () => {
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Pending Reviews</p>
+              <p className="text-sm font-medium text-gray-500">
+                Pending Reviews
+              </p>
               <p className="text-2xl font-semibold text-gray-900">5</p>
             </div>
           </div>
@@ -320,11 +355,13 @@ const PatientList: React.FC = () => {
         <Table
           columns={columns}
           data={filteredPatients}
-          onRowClick={(patient) => navigate(`/dashboard/patients/${patient.id}`)}
+          onRowClick={(patient) =>
+            navigate(`/dashboard/patients/${patient.id}`)
+          }
           emptyMessage={
             searchQuery
-              ? 'No patients found matching your search.'
-              : 'No patients yet. Add your first patient to get started.'
+              ? "No patients found matching your search."
+              : "No patients yet. Add your first patient to get started."
           }
         />
       </div>

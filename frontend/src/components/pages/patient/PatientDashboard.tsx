@@ -1,6 +1,7 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Badge, Button } from '../../common';
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { Badge, Button } from "../../common";
+import { useApiGet } from "../../../hooks/useApi";
 
 interface ActivePrescription {
   id: string;
@@ -19,12 +20,12 @@ interface Appointment {
   date: string;
   time: string;
   type: string;
-  status: 'upcoming' | 'confirmed';
+  status: "upcoming" | "confirmed";
 }
 
 interface Activity {
   id: string;
-  type: 'prescription' | 'appointment' | 'test';
+  type: "prescription" | "appointment" | "test";
   title: string;
   description: string;
   timestamp: string;
@@ -34,75 +35,107 @@ interface Activity {
 const PatientDashboard: React.FC = () => {
   const navigate = useNavigate();
 
-  // Mock data - replace with actual API call
-  const activePrescriptions: ActivePrescription[] = [
-    {
-      id: '1',
-      medication: 'Lisinopril',
-      dosage: '10mg',
-      frequency: 'Once daily',
-      doctor: 'Dr. Sarah Smith',
-      daysRemaining: 45,
-      nextDose: '8:00 AM',
-    },
-    {
-      id: '2',
-      medication: 'Metformin',
-      dosage: '500mg',
-      frequency: 'Twice daily',
-      doctor: 'Dr. Sarah Smith',
-      daysRemaining: 45,
-      nextDose: '8:00 AM, 8:00 PM',
-    },
-  ];
+  // Fetch dashboard data from API
+  const { data: dashboardData, isLoading } = useApiGet<{
+    activePrescriptions: ActivePrescription[];
+    upcomingAppointments: Appointment[];
+    recentActivity: Activity[];
+    stats: {
+      activePrescriptions: number;
+      appointments: number;
+      doctors: number;
+      labResults: number;
+    };
+  }>("patient-dashboard", "/api/v1/patients/dashboard");
 
-  const upcomingAppointments: Appointment[] = [
-    {
-      id: '1',
-      doctor: 'Dr. Sarah Smith',
-      specialty: 'Internal Medicine',
-      date: '2025-11-25',
-      time: '10:30 AM',
-      type: 'Follow-up',
-      status: 'confirmed',
-    },
-    {
-      id: '2',
-      doctor: 'Dr. Michael Chen',
-      specialty: 'Cardiology',
-      date: '2025-12-05',
-      time: '2:00 PM',
-      type: 'Consultation',
-      status: 'upcoming',
-    },
-  ];
+  // Commented out hardcoded data - now using API
+  // const activePrescriptions: ActivePrescription[] = [
+  //   {
+  //     id: '1',
+  //     medication: 'Lisinopril',
+  //     dosage: '10mg',
+  //     frequency: 'Once daily',
+  //     doctor: 'Dr. Sarah Smith',
+  //     daysRemaining: 45,
+  //     nextDose: '8:00 AM',
+  //   },
+  //   {
+  //     id: '2',
+  //     medication: 'Metformin',
+  //     dosage: '500mg',
+  //     frequency: 'Twice daily',
+  //     doctor: 'Dr. Sarah Smith',
+  //     daysRemaining: 45,
+  //     nextDose: '8:00 AM, 8:00 PM',
+  //   },
+  // ];
 
-  const recentActivity: Activity[] = [
-    {
-      id: '1',
-      type: 'prescription',
-      title: 'New prescription added',
-      description: 'Lisinopril 10mg prescribed by Dr. Sarah Smith',
-      timestamp: '2 days ago',
-      icon: 'prescription',
-    },
-    {
-      id: '2',
-      type: 'appointment',
-      title: 'Appointment confirmed',
-      description: 'Follow-up with Dr. Sarah Smith on Nov 25',
-      timestamp: '3 days ago',
-      icon: 'calendar',
-    },
-    {
-      id: '3',
-      type: 'test',
-      title: 'Lab results available',
-      description: 'Blood work results are now available',
-      timestamp: '1 week ago',
-      icon: 'clipboard',
-    },
-  ];
+  // const upcomingAppointments: Appointment[] = [
+  //   {
+  //     id: '1',
+  //     doctor: 'Dr. Sarah Smith',
+  //     specialty: 'Internal Medicine',
+  //     date: '2025-11-25',
+  //     time: '10:30 AM',
+  //     type: 'Follow-up',
+  //     status: 'confirmed',
+  //   },
+  //   {
+  //     id: '2',
+  //     doctor: 'Dr. Michael Chen',
+  //     specialty: 'Cardiology',
+  //     date: '2025-12-05',
+  //     time: '2:00 PM',
+  //     type: 'Consultation',
+  //     status: 'upcoming',
+  //   },
+  // ];
+
+  // const recentActivity: Activity[] = [
+  //   {
+  //     id: '1',
+  //     type: 'prescription',
+  //     title: 'New prescription added',
+  //     description: 'Lisinopril 10mg prescribed by Dr. Sarah Smith',
+  //     timestamp: '2 days ago',
+  //     icon: 'prescription',
+  //   },
+  //   {
+  //     id: '2',
+  //     type: 'appointment',
+  //     title: 'Appointment confirmed',
+  //     description: 'Follow-up with Dr. Sarah Smith on Nov 25',
+  //     timestamp: '3 days ago',
+  //     icon: 'calendar',
+  //   },
+  //   {
+  //     id: '3',
+  //     type: 'test',
+  //     title: 'Lab results available',
+  //     description: 'Blood work results are now available',
+  //     timestamp: '1 week ago',
+  //     icon: 'clipboard',
+  //   },
+  // ];
+
+  // Use API data or fallback to empty arrays
+  const activePrescriptions = dashboardData?.activePrescriptions || [];
+  const upcomingAppointments = dashboardData?.upcomingAppointments || [];
+  const recentActivity = dashboardData?.recentActivity || [];
+  const stats = dashboardData?.stats || {
+    activePrescriptions: 0,
+    appointments: 0,
+    doctors: 0,
+    labResults: 0,
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Loading dashboard...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -153,9 +186,11 @@ const PatientDashboard: React.FC = () => {
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Active Prescriptions</p>
+              <p className="text-sm font-medium text-gray-500">
+                Active Prescriptions
+              </p>
               <p className="text-2xl font-semibold text-gray-900">
-                {activePrescriptions.length}
+                {stats.activePrescriptions}
               </p>
             </div>
           </div>
@@ -181,7 +216,7 @@ const PatientDashboard: React.FC = () => {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">Appointments</p>
               <p className="text-2xl font-semibold text-gray-900">
-                {upcomingAppointments.length}
+                {stats.appointments}
               </p>
             </div>
           </div>
@@ -206,7 +241,9 @@ const PatientDashboard: React.FC = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">My Doctors</p>
-              <p className="text-2xl font-semibold text-gray-900">3</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {stats.doctors}
+              </p>
             </div>
           </div>
         </div>
@@ -230,7 +267,9 @@ const PatientDashboard: React.FC = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">Lab Results</p>
-              <p className="text-2xl font-semibold text-gray-900">2</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {stats.labResults}
+              </p>
             </div>
           </div>
         </div>
@@ -247,7 +286,7 @@ const PatientDashboard: React.FC = () => {
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => navigate('/patient/prescriptions')}
+                onClick={() => navigate("/patient/prescriptions")}
               >
                 View All
               </Button>
@@ -258,7 +297,9 @@ const PatientDashboard: React.FC = () => {
                 <div
                   key={prescription.id}
                   className="border border-gray-200 rounded-lg p-4 hover:border-primary-300 transition-colors cursor-pointer"
-                  onClick={() => navigate(`/patient/prescriptions/${prescription.id}`)}
+                  onClick={() =>
+                    navigate(`/patient/prescriptions/${prescription.id}`)
+                  }
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -311,9 +352,12 @@ const PatientDashboard: React.FC = () => {
                   <div className="flex-shrink-0">
                     <div className="bg-primary-100 rounded-lg p-3 text-center">
                       <p className="text-xs font-medium text-primary-600">
-                        {new Date(appointment.date).toLocaleDateString('en-US', {
-                          month: 'short',
-                        })}
+                        {new Date(appointment.date).toLocaleDateString(
+                          "en-US",
+                          {
+                            month: "short",
+                          }
+                        )}
                       </p>
                       <p className="text-2xl font-bold text-primary-600">
                         {new Date(appointment.date).getDate()}
@@ -327,14 +371,18 @@ const PatientDashboard: React.FC = () => {
                       </h3>
                       <Badge
                         variant={
-                          appointment.status === 'confirmed' ? 'success' : 'info'
+                          appointment.status === "confirmed"
+                            ? "success"
+                            : "info"
                         }
                         size="sm"
                       >
                         {appointment.status}
                       </Badge>
                     </div>
-                    <p className="text-sm text-gray-600">{appointment.specialty}</p>
+                    <p className="text-sm text-gray-600">
+                      {appointment.specialty}
+                    </p>
                     <p className="text-sm text-gray-500">
                       {appointment.time} • {appointment.type}
                     </p>
@@ -362,7 +410,7 @@ const PatientDashboard: React.FC = () => {
                 <div key={activity.id} className="flex space-x-3">
                   <div className="flex-shrink-0">
                     <div className="h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center">
-                      {activity.type === 'prescription' && (
+                      {activity.type === "prescription" && (
                         <svg
                           className="w-5 h-5 text-gray-600"
                           fill="none"
@@ -377,7 +425,7 @@ const PatientDashboard: React.FC = () => {
                           />
                         </svg>
                       )}
-                      {activity.type === 'appointment' && (
+                      {activity.type === "appointment" && (
                         <svg
                           className="w-5 h-5 text-gray-600"
                           fill="none"
@@ -392,7 +440,7 @@ const PatientDashboard: React.FC = () => {
                           />
                         </svg>
                       )}
-                      {activity.type === 'test' && (
+                      {activity.type === "test" && (
                         <svg
                           className="w-5 h-5 text-gray-600"
                           fill="none"
@@ -427,7 +475,7 @@ const PatientDashboard: React.FC = () => {
             <Button
               variant="secondary"
               className="w-full mt-6"
-              onClick={() => navigate('/patient/activity')}
+              onClick={() => navigate("/patient/activity")}
             >
               View All Activity
             </Button>
@@ -460,8 +508,8 @@ const PatientDashboard: React.FC = () => {
               Medication Reminder
             </h3>
             <p className="text-sm text-blue-800 mt-1">
-              Don't forget to take your evening dose of Metformin at 8:00 PM. Set up
-              automatic reminders in your profile settings.
+              Don't forget to take your evening dose of Metformin at 8:00 PM.
+              Set up automatic reminders in your profile settings.
             </p>
           </div>
           <Button variant="secondary" size="sm">

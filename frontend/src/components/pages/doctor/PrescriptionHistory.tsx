@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { SearchBar, Table, Badge, Button } from '../../common';
-import type { Column } from '../../common/Table';
+import React, { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { SearchBar, Table, Badge, Button } from "../../common";
+import type { Column } from "../../common/Table";
+import { useApiGet } from "../../../hooks/useApi";
 
 interface Prescription {
   id: string;
@@ -12,117 +13,151 @@ interface Prescription {
   frequency: string;
   duration: string;
   prescribedDate: string;
-  status: 'active' | 'completed' | 'discontinued' | 'pending';
+  status: "active" | "completed" | "discontinued" | "pending";
   prescribedBy: string;
 }
 
-// Mock data - replace with actual API call
-const mockPrescriptions: Prescription[] = [
-  {
-    id: '1',
-    patientName: 'Sarah Johnson',
-    patientId: '1',
-    medication: 'Lisinopril',
-    dosage: '10mg',
-    frequency: 'Once daily',
-    duration: '90 days',
-    prescribedDate: '2025-11-01',
-    status: 'active',
-    prescribedBy: 'Dr. Smith',
-  },
-  {
-    id: '2',
-    patientName: 'Sarah Johnson',
-    patientId: '1',
-    medication: 'Metformin',
-    dosage: '500mg',
-    frequency: 'Twice daily',
-    duration: '90 days',
-    prescribedDate: '2025-11-01',
-    status: 'active',
-    prescribedBy: 'Dr. Smith',
-  },
-  {
-    id: '3',
-    patientName: 'Michael Chen',
-    patientId: '2',
-    medication: 'Atorvastatin',
-    dosage: '20mg',
-    frequency: 'Once daily',
-    duration: '90 days',
-    prescribedDate: '2025-10-28',
-    status: 'active',
-    prescribedBy: 'Dr. Smith',
-  },
-  {
-    id: '4',
-    patientName: 'Emily Rodriguez',
-    patientId: '3',
-    medication: 'Albuterol Inhaler',
-    dosage: '90mcg',
-    frequency: 'As needed',
-    duration: '30 days',
-    prescribedDate: '2025-10-25',
-    status: 'active',
-    prescribedBy: 'Dr. Smith',
-  },
-  {
-    id: '5',
-    patientName: 'Sarah Johnson',
-    patientId: '1',
-    medication: 'Amoxicillin',
-    dosage: '500mg',
-    frequency: 'Three times daily',
-    duration: '10 days',
-    prescribedDate: '2025-10-15',
-    status: 'completed',
-    prescribedBy: 'Dr. Smith',
-  },
-  {
-    id: '6',
-    patientName: 'David Thompson',
-    patientId: '4',
-    medication: 'Ibuprofen',
-    dosage: '400mg',
-    frequency: 'As needed',
-    duration: '14 days',
-    prescribedDate: '2025-09-20',
-    status: 'completed',
-    prescribedBy: 'Dr. Smith',
-  },
-];
+// Commented out hardcoded data - now using API
+// const mockPrescriptions: Prescription[] = [
+//   {
+//     id: '1',
+//     patientName: 'Sarah Johnson',
+//     patientId: '1',
+//     medication: 'Lisinopril',
+//     dosage: '10mg',
+//     frequency: 'Once daily',
+//     duration: '90 days',
+//     prescribedDate: '2025-11-01',
+//     status: 'active',
+//     prescribedBy: 'Dr. Smith',
+//   },
+//   {
+//     id: '2',
+//     patientName: 'Sarah Johnson',
+//     patientId: '1',
+//     medication: 'Metformin',
+//     dosage: '500mg',
+//     frequency: 'Twice daily',
+//     duration: '90 days',
+//     prescribedDate: '2025-11-01',
+//     status: 'active',
+//     prescribedBy: 'Dr. Smith',
+//   },
+//   {
+//     id: '3',
+//     patientName: 'Michael Chen',
+//     patientId: '2',
+//     medication: 'Atorvastatin',
+//     dosage: '20mg',
+//     frequency: 'Once daily',
+//     duration: '90 days',
+//     prescribedDate: '2025-10-28',
+//     status: 'active',
+//     prescribedBy: 'Dr. Smith',
+//   },
+//   {
+//     id: '4',
+//     patientName: 'Emily Rodriguez',
+//     patientId: '3',
+//     medication: 'Albuterol Inhaler',
+//     dosage: '90mcg',
+//     frequency: 'As needed',
+//     duration: '30 days',
+//     prescribedDate: '2025-10-25',
+//     status: 'active',
+//     prescribedBy: 'Dr. Smith',
+//   },
+//   {
+//     id: '5',
+//     patientName: 'Sarah Johnson',
+//     patientId: '1',
+//     medication: 'Amoxicillin',
+//     dosage: '500mg',
+//     frequency: 'Three times daily',
+//     duration: '10 days',
+//     prescribedDate: '2025-10-15',
+//     status: 'completed',
+//     prescribedBy: 'Dr. Smith',
+//   },
+//   {
+//     id: '6',
+//     patientName: 'David Thompson',
+//     patientId: '4',
+//     medication: 'Ibuprofen',
+//     dosage: '400mg',
+//     frequency: 'As needed',
+//     duration: '14 days',
+//     prescribedDate: '2025-09-20',
+//     status: 'completed',
+//     prescribedBy: 'Dr. Smith',
+//   },
+// ];
 
 const PrescriptionHistory: React.FC = () => {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [prescriptions] = useState<Prescription[]>(mockPrescriptions);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  // Filter prescriptions based on search query and status
-  const filteredPrescriptions = prescriptions.filter((prescription) => {
-    const matchesSearch =
-      prescription.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      prescription.medication.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || prescription.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  // Fetch prescriptions from API
+  const { data: prescriptionsData, isLoading } = useApiGet<Prescription[]>(
+    ["prescriptions", statusFilter, searchQuery],
+    `/api/v1/doctors/prescriptions${
+      statusFilter && statusFilter !== "all" ? `?status=${statusFilter}` : ""
+    }${
+      searchQuery
+        ? `${
+            statusFilter && statusFilter !== "all" ? "&" : "?"
+          }search=${encodeURIComponent(searchQuery)}`
+        : ""
+    }`
+  );
+
+  // Use API data or fallback to empty array
+  const prescriptions = prescriptionsData || [];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Loading prescriptions...</div>
+      </div>
+    );
+  }
+
+  // Filter prescriptions based on search query (client-side for additional filtering)
+  const filteredPrescriptions = useMemo(() => {
+    if (!searchQuery) return prescriptions;
+    return prescriptions.filter((prescription) => {
+      const matchesSearch =
+        prescription.patientName
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase()) ||
+        prescription.medication
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase());
+      const matchesStatus =
+        statusFilter === "all" || prescription.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [prescriptions, searchQuery, statusFilter]);
 
   const columns: Column<Prescription>[] = [
     {
-      key: 'patientName',
-      header: 'Patient',
+      key: "patientName",
+      header: "Patient",
       render: (prescription) => (
         <div>
           <div className="text-sm font-medium text-gray-900">
             {prescription.patientName}
           </div>
-          <div className="text-xs text-gray-500">ID: {prescription.patientId}</div>
+          <div className="text-xs text-gray-500">
+            ID: {prescription.patientId}
+          </div>
         </div>
       ),
     },
     {
-      key: 'medication',
-      header: 'Medication',
+      key: "medication",
+      header: "Medication",
       render: (prescription) => (
         <div>
           <div className="text-sm font-medium text-gray-900">
@@ -135,34 +170,34 @@ const PrescriptionHistory: React.FC = () => {
       ),
     },
     {
-      key: 'duration',
-      header: 'Duration',
+      key: "duration",
+      header: "Duration",
       render: (prescription) => (
         <span className="text-sm text-gray-900">{prescription.duration}</span>
       ),
     },
     {
-      key: 'prescribedDate',
-      header: 'Prescribed Date',
+      key: "prescribedDate",
+      header: "Prescribed Date",
       render: (prescription) => (
         <span className="text-sm text-gray-900">
-          {new Date(prescription.prescribedDate).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
+          {new Date(prescription.prescribedDate).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
           })}
         </span>
       ),
     },
     {
-      key: 'status',
-      header: 'Status',
+      key: "status",
+      header: "Status",
       render: (prescription) => {
         const variants = {
-          active: 'success' as const,
-          completed: 'default' as const,
-          discontinued: 'warning' as const,
-          pending: 'info' as const,
+          active: "success" as const,
+          completed: "default" as const,
+          discontinued: "warning" as const,
+          pending: "info" as const,
         };
         return (
           <Badge variant={variants[prescription.status]}>
@@ -172,8 +207,8 @@ const PrescriptionHistory: React.FC = () => {
       },
     },
     {
-      key: 'actions',
-      header: 'Actions',
+      key: "actions",
+      header: "Actions",
       render: (prescription) => (
         <div className="flex items-center space-x-2">
           <Button
@@ -186,7 +221,7 @@ const PrescriptionHistory: React.FC = () => {
           >
             View
           </Button>
-          {prescription.status === 'active' && (
+          {prescription.status === "active" && (
             <Button
               size="sm"
               variant="primary"
@@ -206,8 +241,8 @@ const PrescriptionHistory: React.FC = () => {
   // Calculate statistics
   const stats = {
     total: prescriptions.length,
-    active: prescriptions.filter((p) => p.status === 'active').length,
-    completed: prescriptions.filter((p) => p.status === 'completed').length,
+    active: prescriptions.filter((p) => p.status === "active").length,
+    completed: prescriptions.filter((p) => p.status === "completed").length,
     thisMonth: prescriptions.filter((p) => {
       const prescribedDate = new Date(p.prescribedDate);
       const now = new Date();
@@ -223,7 +258,9 @@ const PrescriptionHistory: React.FC = () => {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Prescription History</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Prescription History
+          </h1>
           <p className="mt-1 text-sm text-gray-500">
             View and manage all prescriptions
           </p>
@@ -231,7 +268,7 @@ const PrescriptionHistory: React.FC = () => {
         <Button
           variant="primary"
           className="btn-gradient text-white"
-          onClick={() => navigate('/dashboard/prescriptions/new')}
+          onClick={() => navigate("/dashboard/prescriptions/new")}
         >
           <svg
             className="w-5 h-5 mr-2 inline"
@@ -270,8 +307,12 @@ const PrescriptionHistory: React.FC = () => {
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Total Prescriptions</p>
-              <p className="text-2xl font-semibold text-gray-900">{stats.total}</p>
+              <p className="text-sm font-medium text-gray-500">
+                Total Prescriptions
+              </p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {stats.total}
+              </p>
             </div>
           </div>
         </div>
@@ -295,7 +336,9 @@ const PrescriptionHistory: React.FC = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">Active</p>
-              <p className="text-2xl font-semibold text-gray-900">{stats.active}</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {stats.active}
+              </p>
             </div>
           </div>
         </div>
@@ -319,7 +362,9 @@ const PrescriptionHistory: React.FC = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">Completed</p>
-              <p className="text-2xl font-semibold text-gray-900">{stats.completed}</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {stats.completed}
+              </p>
             </div>
           </div>
         </div>
@@ -343,7 +388,9 @@ const PrescriptionHistory: React.FC = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">This Month</p>
-              <p className="text-2xl font-semibold text-gray-900">{stats.thisMonth}</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {stats.thisMonth}
+              </p>
             </div>
           </div>
         </div>
@@ -395,11 +442,13 @@ const PrescriptionHistory: React.FC = () => {
         <Table
           columns={columns}
           data={filteredPrescriptions}
-          onRowClick={(prescription) => navigate(`/dashboard/prescriptions/${prescription.id}`)}
+          onRowClick={(prescription) =>
+            navigate(`/dashboard/prescriptions/${prescription.id}`)
+          }
           emptyMessage={
             searchQuery
-              ? 'No prescriptions found matching your search.'
-              : 'No prescriptions yet. Create your first prescription to get started.'
+              ? "No prescriptions found matching your search."
+              : "No prescriptions yet. Create your first prescription to get started."
           }
         />
       </div>
