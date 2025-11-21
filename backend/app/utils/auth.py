@@ -2,6 +2,7 @@
 Authentication utilities for password hashing and JWT token generation
 """
 import hashlib
+import base64
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
@@ -16,18 +17,21 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 def _prehash_password(password: str) -> str:
     """
     Pre-hash password with SHA-256 to handle passwords longer than bcrypt's 72-byte limit.
+    Uses base64 encoding to keep the result under 72 bytes (44 characters = 44 bytes).
     This ensures compatibility with longer passwords while maintaining security.
     
     Args:
         password: Plain text password
         
     Returns:
-        SHA-256 hashed password (64 bytes, hex encoded to 128 characters)
+        Base64-encoded SHA-256 hash (44 characters = 44 bytes, well within bcrypt's 72-byte limit)
     """
     # Encode password to bytes and hash with SHA-256
     password_bytes = password.encode('utf-8')
-    sha256_hash = hashlib.sha256(password_bytes).hexdigest()
-    return sha256_hash
+    sha256_hash = hashlib.sha256(password_bytes).digest()  # Get raw bytes, not hex
+    # Encode to base64 for compact representation (44 chars = 44 bytes)
+    base64_hash = base64.b64encode(sha256_hash).decode('utf-8')
+    return base64_hash
 
 
 def hash_password(password: str) -> str:
