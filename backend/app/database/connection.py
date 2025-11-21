@@ -4,7 +4,21 @@ Beanie Database Connection Setup
 from motor.motor_asyncio import AsyncIOMotorClient
 from beanie import init_beanie as beanie_init
 from app.config.settings import settings
-from app.models import User  # Import document models for Beanie initialization
+from app.models import (
+    User,
+    Doctor,
+    Patient,
+    Prescription,
+    Condition,
+    Allergy,
+    Surgery,
+    Immunization,
+    LabResult,
+    Appointment,
+    Notification,
+    Pharmacy,
+    RefreshToken,
+)  # Import document models for Beanie initialization
 
 
 # Global client instance to manage connection lifecycle
@@ -33,8 +47,18 @@ async def init_beanie():
             database=_client[settings.mongodb_database],
             document_models=[
                 User,
-                # Add more document models here as you create them
-                # Example: Prescription, Patient, Doctor, MedicalRecord, etc.
+                Doctor,
+                Patient,
+                Prescription,
+                Condition,
+                Allergy,
+                Surgery,
+                Immunization,
+                LabResult,
+                Appointment,
+                Notification,
+                Pharmacy,
+                RefreshToken,
             ]
         )        
         print("✅ Database connection ready")

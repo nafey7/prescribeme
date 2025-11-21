@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Badge, Button, Modal } from '../../common';
+import React, { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Badge, Button, Modal } from "../../common";
+import { useApiGet } from "../../../hooks/useApi";
 
 interface DosageSchedule {
   time: string;
@@ -12,48 +13,111 @@ const PrescriptionDetail: React.FC = () => {
   const navigate = useNavigate();
   const [showRefillModal, setShowRefillModal] = useState(false);
 
-  // Mock data - replace with actual API call
-  const prescription = {
-    id: prescriptionId,
-    medication: 'Lisinopril',
-    genericName: 'Lisinopril',
-    dosage: '10mg',
-    frequency: 'Once daily',
-    duration: '90 days',
-    prescribedDate: '2025-11-01',
-    expiryDate: '2026-02-01',
-    status: 'active',
-    refillsRemaining: 2,
-    totalRefills: 3,
-    instructions: 'Take with or without food. Take at the same time each day.',
-    warnings: [
-      'May cause dizziness. Avoid driving until you know how this medication affects you.',
-      'Avoid alcohol while taking this medication.',
-      'Notify your doctor if you experience persistent cough or swelling.',
-    ],
-    sideEffects: ['Dizziness', 'Headache', 'Fatigue', 'Cough'],
-    interactions: [
-      'Potassium supplements',
-      'NSAIDs (e.g., ibuprofen)',
-      'Lithium',
-    ],
+  // Fetch prescription details from API
+  const { data: prescriptionData, isLoading } = useApiGet<{
+    id: string;
+    medication: string;
+    genericName?: string;
+    dosage: string;
+    frequency: string;
+    duration: string;
+    prescribedDate: string;
+    expiryDate: string;
+    status: string;
+    refillsRemaining: number;
+    totalRefills: number;
+    instructions?: string;
+    warnings: string[];
+    sideEffects: string[];
+    interactions: string[];
     doctor: {
-      name: 'Dr. Sarah Smith',
-      specialty: 'Internal Medicine',
-      phone: '(555) 123-4567',
-      email: 'dr.smith@hospital.com',
-    },
+      name: string;
+      specialty: string;
+      phone?: string;
+      email?: string;
+    };
     pharmacy: {
-      name: 'CVS Pharmacy',
-      address: '123 Main Street, San Francisco, CA 94102',
-      phone: '(555) 987-6543',
-      hours: 'Mon-Fri: 8AM-9PM, Sat-Sun: 9AM-6PM',
-    },
+      name: string;
+      address?: string;
+      phone?: string;
+      hours?: string;
+    };
+  }>(
+    ["prescription", prescriptionId || ""],
+    `/api/v1/patients/prescriptions/${prescriptionId}`
+  );
+
+  // Commented out hardcoded data - now using API
+  // const prescription = {
+  //   id: prescriptionId,
+  //   medication: 'Lisinopril',
+  //   genericName: 'Lisinopril',
+  //   dosage: '10mg',
+  //   frequency: 'Once daily',
+  //   duration: '90 days',
+  //   prescribedDate: '2025-11-01',
+  //   expiryDate: '2026-02-01',
+  //   status: 'active',
+  //   refillsRemaining: 2,
+  //   totalRefills: 3,
+  //   instructions: 'Take with or without food. Take at the same time each day.',
+  //   warnings: [
+  //     'May cause dizziness. Avoid driving until you know how this medication affects you.',
+  //     'Avoid alcohol while taking this medication.',
+  //     'Notify your doctor if you experience persistent cough or swelling.',
+  //   ],
+  //   sideEffects: ['Dizziness', 'Headache', 'Fatigue', 'Cough'],
+  //   interactions: [
+  //     'Potassium supplements',
+  //     'NSAIDs (e.g., ibuprofen)',
+  //     'Lithium',
+  //   ],
+  //   doctor: {
+  //     name: 'Dr. Sarah Smith',
+  //     specialty: 'Internal Medicine',
+  //     phone: '(555) 123-4567',
+  //     email: 'dr.smith@hospital.com',
+  //   },
+  //   pharmacy: {
+  //     name: 'CVS Pharmacy',
+  //     address: '123 Main Street, San Francisco, CA 94102',
+  //     phone: '(555) 987-6543',
+  //     hours: 'Mon-Fri: 8AM-9PM, Sat-Sun: 9AM-6PM',
+  //   },
+  // };
+
+  // Use API data or fallback
+  const prescription = prescriptionData || {
+    id: prescriptionId || "",
+    medication: "",
+    genericName: "",
+    dosage: "",
+    frequency: "",
+    duration: "",
+    prescribedDate: "",
+    expiryDate: "",
+    status: "active",
+    refillsRemaining: 0,
+    totalRefills: 0,
+    instructions: "",
+    warnings: [],
+    sideEffects: [],
+    interactions: [],
+    doctor: { name: "", specialty: "", phone: "", email: "" },
+    pharmacy: { name: "", address: "", phone: "", hours: "" },
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Loading prescription details...</div>
+      </div>
+    );
+  }
+
   const dosageSchedule: DosageSchedule[] = [
-    { time: '8:00 AM', taken: true },
-    { time: '8:00 AM (Tomorrow)', taken: false },
+    { time: "8:00 AM", taken: true },
+    { time: "8:00 AM (Tomorrow)", taken: false },
   ];
 
   return (
@@ -61,7 +125,7 @@ const PrescriptionDetail: React.FC = () => {
       {/* Breadcrumb */}
       <nav className="flex text-sm text-gray-500">
         <button
-          onClick={() => navigate('/patient/prescriptions')}
+          onClick={() => navigate("/patient/prescriptions")}
           className="hover:text-gray-700"
         >
           My Prescriptions
@@ -80,17 +144,19 @@ const PrescriptionDetail: React.FC = () => {
               </h1>
               <Badge
                 variant={
-                  prescription.status === 'active'
-                    ? 'success'
-                    : prescription.status === 'completed'
-                    ? 'default'
-                    : 'danger'
+                  prescription.status === "active"
+                    ? "success"
+                    : prescription.status === "completed"
+                    ? "default"
+                    : "danger"
                 }
               >
                 {prescription.status}
               </Badge>
             </div>
-            <p className="mt-1 text-lg text-gray-600">{prescription.genericName}</p>
+            <p className="mt-1 text-lg text-gray-600">
+              {prescription.genericName}
+            </p>
             <div className="mt-4 flex items-center space-x-6 text-sm text-gray-600">
               <span className="flex items-center">
                 <svg
@@ -106,20 +172,23 @@ const PrescriptionDetail: React.FC = () => {
                     d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                   />
                 </svg>
-                Prescribed on{' '}
-                {new Date(prescription.prescribedDate).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
+                Prescribed on{" "}
+                {new Date(prescription.prescribedDate).toLocaleDateString(
+                  "en-US",
+                  {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  }
+                )}
               </span>
               <span>•</span>
               <span className="flex items-center">
-                Expires{' '}
-                {new Date(prescription.expiryDate).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
+                Expires{" "}
+                {new Date(prescription.expiryDate).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
                 })}
               </span>
             </div>
@@ -198,7 +267,9 @@ const PrescriptionDetail: React.FC = () => {
               <h3 className="text-sm font-semibold text-gray-900 mb-2">
                 Instructions
               </h3>
-              <p className="text-sm text-gray-700">{prescription.instructions}</p>
+              <p className="text-sm text-gray-700">
+                {prescription.instructions}
+              </p>
             </div>
           </div>
 
@@ -216,7 +287,7 @@ const PrescriptionDetail: React.FC = () => {
                   <div className="flex items-center space-x-3">
                     <div
                       className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                        dose.taken ? 'bg-green-100' : 'bg-gray-100'
+                        dose.taken ? "bg-green-100" : "bg-gray-100"
                       }`}
                     >
                       {dose.taken ? (
@@ -250,7 +321,9 @@ const PrescriptionDetail: React.FC = () => {
                       )}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{dose.time}</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {dose.time}
+                      </p>
                       <p className="text-xs text-gray-500">
                         {prescription.dosage} - {prescription.medication}
                       </p>
@@ -345,8 +418,8 @@ const PrescriptionDetail: React.FC = () => {
                 <div className="flex justify-between text-sm mb-2">
                   <span className="text-gray-600">Refills Used</span>
                   <span className="font-medium text-gray-900">
-                    {prescription.totalRefills - prescription.refillsRemaining} of{' '}
-                    {prescription.totalRefills}
+                    {prescription.totalRefills - prescription.refillsRemaining}{" "}
+                    of {prescription.totalRefills}
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
@@ -354,7 +427,8 @@ const PrescriptionDetail: React.FC = () => {
                     className="bg-primary-600 h-2 rounded-full"
                     style={{
                       width: `${
-                        ((prescription.totalRefills - prescription.refillsRemaining) /
+                        ((prescription.totalRefills -
+                          prescription.refillsRemaining) /
                           prescription.totalRefills) *
                         100
                       }%`,
@@ -366,7 +440,7 @@ const PrescriptionDetail: React.FC = () => {
                 <p>
                   <span className="font-medium text-gray-900">
                     {prescription.refillsRemaining}
-                  </span>{' '}
+                  </span>{" "}
                   refills remaining
                 </p>
               </div>
@@ -383,9 +457,9 @@ const PrescriptionDetail: React.FC = () => {
                 <div className="h-12 w-12 rounded-full bg-primary-100 flex items-center justify-center">
                   <span className="text-primary-600 font-semibold">
                     {prescription.doctor.name
-                      .split(' ')
+                      .split(" ")
                       .map((n) => n[0])
-                      .join('')}
+                      .join("")}
                   </span>
                 </div>
                 <div>
@@ -439,13 +513,17 @@ const PrescriptionDetail: React.FC = () => {
 
           {/* Pharmacy Information */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Pharmacy</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Pharmacy
+            </h2>
             <div className="space-y-3 text-sm">
               <div>
                 <p className="font-semibold text-gray-900">
                   {prescription.pharmacy.name}
                 </p>
-                <p className="text-gray-600 mt-1">{prescription.pharmacy.address}</p>
+                <p className="text-gray-600 mt-1">
+                  {prescription.pharmacy.address}
+                </p>
               </div>
               <div className="pt-3 border-t border-gray-200 space-y-2">
                 <p className="flex items-center text-gray-600">
@@ -499,7 +577,7 @@ const PrescriptionDetail: React.FC = () => {
         <div className="space-y-4">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm text-blue-800">
-              Your refill request will be sent to {prescription.doctor.name} and{' '}
+              Your refill request will be sent to {prescription.doctor.name} and{" "}
               {prescription.pharmacy.name} for approval.
             </p>
           </div>
@@ -509,7 +587,9 @@ const PrescriptionDetail: React.FC = () => {
               Prescription Details
             </p>
             <div className="bg-gray-50 rounded-lg p-4">
-              <p className="font-semibold text-gray-900">{prescription.medication}</p>
+              <p className="font-semibold text-gray-900">
+                {prescription.medication}
+              </p>
               <p className="text-sm text-gray-600">
                 {prescription.dosage} - {prescription.frequency}
               </p>
@@ -531,7 +611,10 @@ const PrescriptionDetail: React.FC = () => {
           </div>
 
           <div className="flex items-center justify-end space-x-3 pt-4">
-            <Button variant="secondary" onClick={() => setShowRefillModal(false)}>
+            <Button
+              variant="secondary"
+              onClick={() => setShowRefillModal(false)}
+            >
               Cancel
             </Button>
             <Button

@@ -1,57 +1,126 @@
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Link, useNavigate } from 'react-router-dom';
-import Input from '../common/Input';
-import Button from '../common/Button';
+import React, { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import axios from "axios";
+import Input from "../common/Input";
+import Button from "../common/Button";
+import { useAuthStore } from "../../store/authStore";
+import API_BASE_URL from "../../config/api";
 
-const signUpSchema = z.object({
-  fullName: z.string().min(2, 'Full name must be at least 2 characters'),
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
-  confirmPassword: z.string(),
-  agreeToTerms: z.boolean().refine(val => val === true, {
-    message: 'You must agree to the terms and conditions',
-  }),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ['confirmPassword'],
-});
+const signUpSchema = z
+  .object({
+    fullName: z.string().min(2, "Full name must be at least 2 characters"),
+    username: z
+      .string()
+      .min(3, "Username must be at least 3 characters")
+      .max(50, "Username too long"),
+    email: z.string().email("Please enter a valid email address"),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+      .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+      .regex(/[0-9]/, "Password must contain at least one number"),
+    confirmPassword: z.string(),
+    role: z.enum(["patient", "doctor"]),
+    agreeToTerms: z.boolean().refine((val) => val === true, {
+      message: "You must agree to the terms and conditions",
+    }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
 
 type SignUpFormData = z.infer<typeof signUpSchema>;
 
 const SignUpForm: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { login } = useAuthStore();
+  const [error, setError] = useState<string | null>(null);
+
+  // Get role from URL query parameter, default to "patient"
+  const roleParam = searchParams.get("role");
+  const defaultRole =
+    roleParam === "doctor" || roleParam === "patient" ? roleParam : "patient";
+
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
+    defaultValues: {
+      role: defaultRole,
+    },
   });
+
+  // Update role when URL parameter changes
+  useEffect(() => {
+    if (roleParam === "doctor" || roleParam === "patient") {
+      setValue("role", roleParam);
+    }
+  }, [roleParam, setValue]);
 
   const onSubmit = async (data: SignUpFormData) => {
     try {
-      // TODO: Implement actual signup API call
-      console.log('Signup data:', data);
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
-      navigate('/');
-    } catch (error) {
-      console.error('Signup error:', error);
+      setError(null);
+
+      const response = await axios.post(
+        `${API_BASE_URL}/auth/signup`,
+        {
+          full_name: data.fullName,
+          username: data.username,
+          email: data.email,
+          password: data.password,
+          role: data.role,
+        },
+        {
+          withCredentials: true, // Important: Include cookies for refresh token
+        }
+      );
+
+      const { access_token, user } = response.data;
+
+      // Use helper login action to map and set user data
+      login(access_token, user);
+
+      // Redirect based on role
+      if (user.role === "doctor") {
+        navigate("/dashboard");
+      } else if (user.role === "patient") {
+        navigate("/patient");
+      } else {
+        navigate("/");
+      }
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.detail || "Signup failed. Please try again.";
+      setError(errorMessage);
+      console.error("Signup error:", err);
     }
   };
 
   return (
     <div className="w-full">
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Create an account</h2>
-        <p className="text-gray-600">Start managing prescriptions efficiently</p>
+        <h2 className="text-3xl font-bold text-gray-900 mb-2">
+          Create an account
+        </h2>
+        <p className="text-gray-600">
+          Start managing prescriptions efficiently
+        </p>
       </div>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         <Input
@@ -59,8 +128,17 @@ const SignUpForm: React.FC = () => {
           type="text"
           placeholder="John Doe"
           error={errors.fullName}
-          register={register('fullName')}
+          register={register("fullName")}
           autoComplete="name"
+        />
+
+        <Input
+          label="Username"
+          type="text"
+          placeholder="johndoe"
+          error={errors.username}
+          register={register("username")}
+          autoComplete="username"
         />
 
         <Input
@@ -68,9 +146,38 @@ const SignUpForm: React.FC = () => {
           type="email"
           placeholder="you@example.com"
           error={errors.email}
-          register={register('email')}
+          register={register("email")}
           autoComplete="email"
         />
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            I am a
+          </label>
+          <div className="flex gap-4">
+            <label className="flex items-center">
+              <input
+                type="radio"
+                value="patient"
+                {...register("role")}
+                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
+              />
+              <span className="ml-2 text-sm text-gray-700">Patient</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="radio"
+                value="doctor"
+                {...register("role")}
+                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
+              />
+              <span className="ml-2 text-sm text-gray-700">Doctor</span>
+            </label>
+          </div>
+          {errors.role && (
+            <p className="mt-1 text-sm text-red-500">{errors.role.message}</p>
+          )}
+        </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -81,14 +188,16 @@ const SignUpForm: React.FC = () => {
             placeholder="••••••••"
             className={`
               w-full px-3 py-2 border rounded-md
-              ${errors.password ? 'border-red-500' : 'border-gray-300'}
+              ${errors.password ? "border-red-500" : "border-gray-300"}
               focus:outline-none focus:ring-2 focus:ring-primary-500
             `}
-            {...register('password')}
+            {...register("password")}
             autoComplete="new-password"
           />
           {errors.password && (
-            <p className="mt-1 text-sm text-red-500">{errors.password.message}</p>
+            <p className="mt-1 text-sm text-red-500">
+              {errors.password.message}
+            </p>
           )}
           <p className="mt-1 text-xs text-gray-500">
             Must be at least 8 characters with uppercase, lowercase, and number
@@ -104,14 +213,16 @@ const SignUpForm: React.FC = () => {
             placeholder="••••••••"
             className={`
               w-full px-3 py-2 border rounded-md
-              ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300'}
+              ${errors.confirmPassword ? "border-red-500" : "border-gray-300"}
               focus:outline-none focus:ring-2 focus:ring-primary-500
             `}
-            {...register('confirmPassword')}
+            {...register("confirmPassword")}
             autoComplete="new-password"
           />
           {errors.confirmPassword && (
-            <p className="mt-1 text-sm text-red-500">{errors.confirmPassword.message}</p>
+            <p className="mt-1 text-sm text-red-500">
+              {errors.confirmPassword.message}
+            </p>
           )}
         </div>
 
@@ -121,22 +232,33 @@ const SignUpForm: React.FC = () => {
               id="agreeToTerms"
               type="checkbox"
               className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded cursor-pointer"
-              {...register('agreeToTerms')}
+              {...register("agreeToTerms")}
             />
           </div>
           <div className="ml-2 text-sm">
-            <label htmlFor="agreeToTerms" className="text-gray-700 cursor-pointer">
-              I agree to the{' '}
-              <Link to="/terms" className="text-primary-600 hover:text-primary-500 font-medium">
+            <label
+              htmlFor="agreeToTerms"
+              className="text-gray-700 cursor-pointer"
+            >
+              I agree to the{" "}
+              <Link
+                to="/terms"
+                className="text-primary-600 hover:text-primary-500 font-medium"
+              >
                 Terms of Service
-              </Link>{' '}
-              and{' '}
-              <Link to="/privacy" className="text-primary-600 hover:text-primary-500 font-medium">
+              </Link>{" "}
+              and{" "}
+              <Link
+                to="/privacy"
+                className="text-primary-600 hover:text-primary-500 font-medium"
+              >
                 Privacy Policy
               </Link>
             </label>
             {errors.agreeToTerms && (
-              <p className="mt-1 text-sm text-red-500">{errors.agreeToTerms.message}</p>
+              <p className="mt-1 text-sm text-red-500">
+                {errors.agreeToTerms.message}
+              </p>
             )}
           </div>
         </div>
@@ -156,7 +278,9 @@ const SignUpForm: React.FC = () => {
             <div className="w-full border-t border-gray-300"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-gray-50 text-gray-500">Or continue with</span>
+            <span className="px-2 bg-gray-50 text-gray-500">
+              Or continue with
+            </span>
           </div>
         </div>
 
@@ -189,7 +313,11 @@ const SignUpForm: React.FC = () => {
             type="button"
             className="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
           >
-            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-5 h-5 mr-2"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
             </svg>
             GitHub
@@ -198,7 +326,7 @@ const SignUpForm: React.FC = () => {
       </form>
 
       <p className="mt-8 text-center text-sm text-gray-600">
-        Already have an account?{' '}
+        Already have an account?{" "}
         <Link
           to="/login"
           className="font-medium text-primary-600 hover:text-primary-500 transition-colors"

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { SearchBar, Badge, Button } from '../../common';
+import React, { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { SearchBar, Badge, Button } from "../../common";
+import { useApiGet } from "../../../hooks/useApi";
 
 interface Prescription {
   id: string;
@@ -10,96 +11,120 @@ interface Prescription {
   doctor: string;
   prescribedDate: string;
   expiryDate: string;
-  status: 'active' | 'completed' | 'expired';
+  status: "active" | "completed" | "expired";
   refillsRemaining: number;
   pharmacy: string;
 }
 
 const MyPrescriptions: React.FC = () => {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  // Mock data - replace with actual API call
-  const prescriptions: Prescription[] = [
-    {
-      id: '1',
-      medication: 'Lisinopril',
-      dosage: '10mg',
-      frequency: 'Once daily',
-      doctor: 'Dr. Sarah Smith',
-      prescribedDate: '2025-11-01',
-      expiryDate: '2026-02-01',
-      status: 'active',
-      refillsRemaining: 2,
-      pharmacy: 'CVS Pharmacy - Main Street',
-    },
-    {
-      id: '2',
-      medication: 'Metformin',
-      dosage: '500mg',
-      frequency: 'Twice daily',
-      doctor: 'Dr. Sarah Smith',
-      prescribedDate: '2025-11-01',
-      expiryDate: '2026-02-01',
-      status: 'active',
-      refillsRemaining: 2,
-      pharmacy: 'CVS Pharmacy - Main Street',
-    },
-    {
-      id: '3',
-      medication: 'Albuterol Inhaler',
-      dosage: '90mcg',
-      frequency: 'As needed',
-      doctor: 'Dr. Michael Chen',
-      prescribedDate: '2025-10-15',
-      expiryDate: '2025-11-15',
-      status: 'active',
-      refillsRemaining: 0,
-      pharmacy: 'Walgreens - Downtown',
-    },
-    {
-      id: '4',
-      medication: 'Amoxicillin',
-      dosage: '500mg',
-      frequency: 'Three times daily',
-      doctor: 'Dr. Sarah Smith',
-      prescribedDate: '2025-09-20',
-      expiryDate: '2025-09-30',
-      status: 'completed',
-      refillsRemaining: 0,
-      pharmacy: 'CVS Pharmacy - Main Street',
-    },
-    {
-      id: '5',
-      medication: 'Ibuprofen',
-      dosage: '400mg',
-      frequency: 'As needed',
-      doctor: 'Dr. Emily Rodriguez',
-      prescribedDate: '2025-08-10',
-      expiryDate: '2025-09-10',
-      status: 'expired',
-      refillsRemaining: 0,
-      pharmacy: 'Rite Aid - Park Avenue',
-    },
-  ];
+  // Fetch prescriptions from API
+  const { data: prescriptionsData, isLoading } = useApiGet<Prescription[]>(
+    ["prescriptions", statusFilter],
+    `/api/v1/patients/prescriptions${
+      statusFilter && statusFilter !== "all" ? `?status=${statusFilter}` : ""
+    }`
+  );
+
+  // Commented out hardcoded data - now using API
+  // const prescriptions: Prescription[] = [
+  //   {
+  //     id: '1',
+  //     medication: 'Lisinopril',
+  //     dosage: '10mg',
+  //     frequency: 'Once daily',
+  //     doctor: 'Dr. Sarah Smith',
+  //     prescribedDate: '2025-11-01',
+  //     expiryDate: '2026-02-01',
+  //     status: 'active',
+  //     refillsRemaining: 2,
+  //     pharmacy: 'CVS Pharmacy - Main Street',
+  //   },
+  //   {
+  //     id: '2',
+  //     medication: 'Metformin',
+  //     dosage: '500mg',
+  //     frequency: 'Twice daily',
+  //     doctor: 'Dr. Sarah Smith',
+  //     prescribedDate: '2025-11-01',
+  //     expiryDate: '2026-02-01',
+  //     status: 'active',
+  //     refillsRemaining: 2,
+  //     pharmacy: 'CVS Pharmacy - Main Street',
+  //   },
+  //   {
+  //     id: '3',
+  //     medication: 'Albuterol Inhaler',
+  //     dosage: '90mcg',
+  //     frequency: 'As needed',
+  //     doctor: 'Dr. Michael Chen',
+  //     prescribedDate: '2025-10-15',
+  //     expiryDate: '2025-11-15',
+  //     status: 'active',
+  //     refillsRemaining: 0,
+  //     pharmacy: 'Walgreens - Downtown',
+  //   },
+  //   {
+  //     id: '4',
+  //     medication: 'Amoxicillin',
+  //     dosage: '500mg',
+  //     frequency: 'Three times daily',
+  //     doctor: 'Dr. Sarah Smith',
+  //     prescribedDate: '2025-09-20',
+  //     expiryDate: '2025-09-30',
+  //     status: 'completed',
+  //     refillsRemaining: 0,
+  //     pharmacy: 'CVS Pharmacy - Main Street',
+  //   },
+  //   {
+  //     id: '5',
+  //     medication: 'Ibuprofen',
+  //     dosage: '400mg',
+  //     frequency: 'As needed',
+  //     doctor: 'Dr. Emily Rodriguez',
+  //     prescribedDate: '2025-08-10',
+  //     expiryDate: '2025-09-10',
+  //     status: 'expired',
+  //     refillsRemaining: 0,
+  //     pharmacy: 'Rite Aid - Park Avenue',
+  //   },
+  // ];
+
+  // Use API data or fallback to empty array
+  const prescriptions = prescriptionsData || [];
 
   // Filter prescriptions
-  const filteredPrescriptions = prescriptions.filter((prescription) => {
-    const matchesSearch =
-      prescription.medication.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      prescription.doctor.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || prescription.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredPrescriptions = useMemo(() => {
+    return prescriptions.filter((prescription) => {
+      const matchesSearch =
+        prescription.medication
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase()) ||
+        prescription.doctor.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus =
+        statusFilter === "all" || prescription.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [prescriptions, searchQuery, statusFilter]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Loading prescriptions...</div>
+      </div>
+    );
+  }
 
   // Calculate statistics
   const stats = {
     total: prescriptions.length,
-    active: prescriptions.filter((p) => p.status === 'active').length,
-    completed: prescriptions.filter((p) => p.status === 'completed').length,
+    active: prescriptions.filter((p) => p.status === "active").length,
+    completed: prescriptions.filter((p) => p.status === "completed").length,
     needsRefill: prescriptions.filter(
-      (p) => p.status === 'active' && p.refillsRemaining === 0
+      (p) => p.status === "active" && p.refillsRemaining === 0
     ).length,
   };
 
@@ -133,8 +158,12 @@ const MyPrescriptions: React.FC = () => {
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Total Prescriptions</p>
-              <p className="text-2xl font-semibold text-gray-900">{stats.total}</p>
+              <p className="text-sm font-medium text-gray-500">
+                Total Prescriptions
+              </p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {stats.total}
+              </p>
             </div>
           </div>
         </div>
@@ -158,7 +187,9 @@ const MyPrescriptions: React.FC = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">Active</p>
-              <p className="text-2xl font-semibold text-gray-900">{stats.active}</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {stats.active}
+              </p>
             </div>
           </div>
         </div>
@@ -182,7 +213,9 @@ const MyPrescriptions: React.FC = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">Completed</p>
-              <p className="text-2xl font-semibold text-gray-900">{stats.completed}</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {stats.completed}
+              </p>
             </div>
           </div>
         </div>
@@ -206,7 +239,9 @@ const MyPrescriptions: React.FC = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">Needs Refill</p>
-              <p className="text-2xl font-semibold text-gray-900">{stats.needsRefill}</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {stats.needsRefill}
+              </p>
             </div>
           </div>
         </div>
@@ -258,7 +293,9 @@ const MyPrescriptions: React.FC = () => {
           <div
             key={prescription.id}
             className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:border-primary-300 transition-colors cursor-pointer"
-            onClick={() => navigate(`/patient/prescriptions/${prescription.id}`)}
+            onClick={() =>
+              navigate(`/patient/prescriptions/${prescription.id}`)
+            }
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">
@@ -268,17 +305,17 @@ const MyPrescriptions: React.FC = () => {
                   </h3>
                   <Badge
                     variant={
-                      prescription.status === 'active'
-                        ? 'success'
-                        : prescription.status === 'completed'
-                        ? 'default'
-                        : 'danger'
+                      prescription.status === "active"
+                        ? "success"
+                        : prescription.status === "completed"
+                        ? "default"
+                        : "danger"
                     }
                   >
                     {prescription.status}
                   </Badge>
                   {prescription.refillsRemaining === 0 &&
-                    prescription.status === 'active' && (
+                    prescription.status === "active" && (
                       <Badge variant="warning">Refill Needed</Badge>
                     )}
                 </div>
@@ -312,37 +349,40 @@ const MyPrescriptions: React.FC = () => {
 
                 <div className="mt-3 flex items-center space-x-6 text-sm text-gray-600">
                   <span>
-                    Prescribed:{' '}
-                    {new Date(prescription.prescribedDate).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                    })}
+                    Prescribed:{" "}
+                    {new Date(prescription.prescribedDate).toLocaleDateString(
+                      "en-US",
+                      {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      }
+                    )}
                   </span>
                   <span>•</span>
                   <span>
-                    {prescription.status === 'active'
-                      ? `Expires: ${new Date(prescription.expiryDate).toLocaleDateString(
-                          'en-US',
-                          {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                          }
-                        )}`
-                      : `Expired: ${new Date(prescription.expiryDate).toLocaleDateString(
-                          'en-US',
-                          {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                          }
-                        )}`}
+                    {prescription.status === "active"
+                      ? `Expires: ${new Date(
+                          prescription.expiryDate
+                        ).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}`
+                      : `Expired: ${new Date(
+                          prescription.expiryDate
+                        ).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}`}
                   </span>
                   {prescription.refillsRemaining > 0 && (
                     <>
                       <span>•</span>
-                      <span>{prescription.refillsRemaining} refills remaining</span>
+                      <span>
+                        {prescription.refillsRemaining} refills remaining
+                      </span>
                     </>
                   )}
                 </div>
@@ -359,7 +399,7 @@ const MyPrescriptions: React.FC = () => {
                 >
                   View Details
                 </Button>
-                {prescription.status === 'active' && (
+                {prescription.status === "active" && (
                   <Button
                     variant="secondary"
                     size="sm"
@@ -396,8 +436,8 @@ const MyPrescriptions: React.FC = () => {
             </h3>
             <p className="mt-1 text-sm text-gray-500">
               {searchQuery
-                ? 'Try adjusting your search or filter criteria.'
-                : 'You don\'t have any prescriptions yet.'}
+                ? "Try adjusting your search or filter criteria."
+                : "You don't have any prescriptions yet."}
             </p>
           </div>
         )}

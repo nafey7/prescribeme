@@ -1,123 +1,149 @@
-import React, { useState } from 'react';
-import { Badge, Tabs } from '../../common';
-import type { Tab } from '../../common/Tabs';
+import React, { useState, useMemo } from "react";
+import { Badge, Tabs } from "../../common";
+import type { Tab } from "../../common/Tabs";
+import { useApiGet } from "../../../hooks/useApi";
 
 interface Notification {
   id: string;
-  type: 'prescription' | 'appointment' | 'system' | 'message';
+  type: "prescription" | "appointment" | "system" | "message";
   title: string;
   description: string;
   timestamp: string;
   read: boolean;
-  priority: 'low' | 'medium' | 'high';
+  priority: "low" | "medium" | "high";
   actionUrl?: string;
   actionLabel?: string;
 }
 
 const Notifications: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('all');
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: '1',
-      type: 'prescription',
-      title: 'Prescription Refill Ready',
-      description: 'Your prescription for Lisinopril 10mg is ready for pickup at CVS Pharmacy.',
-      timestamp: '2 hours ago',
-      read: false,
-      priority: 'high',
-      actionUrl: '/patient/prescriptions/1',
-      actionLabel: 'View Prescription',
-    },
-    {
-      id: '2',
-      type: 'appointment',
-      title: 'Appointment Reminder',
-      description: 'Upcoming appointment with Dr. Sarah Smith tomorrow at 10:30 AM.',
-      timestamp: '5 hours ago',
-      read: false,
-      priority: 'high',
-      actionUrl: '/patient/dashboard',
-      actionLabel: 'View Appointment',
-    },
-    {
-      id: '3',
-      type: 'system',
-      title: 'Lab Results Available',
-      description: 'Your recent blood work results are now available for review.',
-      timestamp: '1 day ago',
-      read: false,
-      priority: 'medium',
-      actionUrl: '/patient/medical-history',
-      actionLabel: 'View Results',
-    },
-    {
-      id: '4',
-      type: 'message',
-      title: 'New Message from Dr. Smith',
-      description: 'Dr. Smith has sent you a message regarding your recent visit.',
-      timestamp: '2 days ago',
-      read: true,
-      priority: 'medium',
-      actionUrl: '/messages/1',
-      actionLabel: 'Read Message',
-    },
-    {
-      id: '5',
-      type: 'prescription',
-      title: 'Prescription Expiring Soon',
-      description: 'Your prescription for Metformin will expire in 7 days. Request a refill now.',
-      timestamp: '3 days ago',
-      read: true,
-      priority: 'medium',
-      actionUrl: '/patient/prescriptions/2',
-      actionLabel: 'Request Refill',
-    },
-    {
-      id: '6',
-      type: 'system',
-      title: 'Account Security Update',
-      description: 'Two-factor authentication is now available. Enable it to secure your account.',
-      timestamp: '1 week ago',
-      read: true,
-      priority: 'low',
-      actionUrl: '/patient/settings',
-      actionLabel: 'Enable 2FA',
-    },
-  ]);
+  const [activeTab, setActiveTab] = useState("all");
+
+  // Fetch notifications from API
+  const { data: notificationsData, isLoading } = useApiGet<Notification[]>(
+    ["notifications", activeTab],
+    `/api/v1/shared/notifications${
+      activeTab === "unread" ? "?unread=true" : ""
+    }${
+      activeTab !== "all" && activeTab !== "unread" ? `?type=${activeTab}` : ""
+    }`
+  );
+
+  // Commented out hardcoded data - now using API
+  // const [notifications, setNotifications] = useState<Notification[]>([
+  //   {
+  //     id: '1',
+  //     type: 'prescription',
+  //     title: 'Prescription Refill Ready',
+  //     description: 'Your prescription for Lisinopril 10mg is ready for pickup at CVS Pharmacy.',
+  //     timestamp: '2 hours ago',
+  //     read: false,
+  //     priority: 'high',
+  //     actionUrl: '/patient/prescriptions/1',
+  //     actionLabel: 'View Prescription',
+  //   },
+  //   {
+  //     id: '2',
+  //     type: 'appointment',
+  //     title: 'Appointment Reminder',
+  //     description: 'Upcoming appointment with Dr. Sarah Smith tomorrow at 10:30 AM.',
+  //     timestamp: '5 hours ago',
+  //     read: false,
+  //     priority: 'high',
+  //     actionUrl: '/patient/dashboard',
+  //     actionLabel: 'View Appointment',
+  //   },
+  //   {
+  //     id: '3',
+  //     type: 'system',
+  //     title: 'Lab Results Available',
+  //     description: 'Your recent blood work results are now available for review.',
+  //     timestamp: '1 day ago',
+  //     read: false,
+  //     priority: 'medium',
+  //     actionUrl: '/patient/medical-history',
+  //     actionLabel: 'View Results',
+  //   },
+  //   {
+  //     id: '4',
+  //     type: 'message',
+  //     title: 'New Message from Dr. Smith',
+  //     description: 'Dr. Smith has sent you a message regarding your recent visit.',
+  //     timestamp: '2 days ago',
+  //     read: true,
+  //     priority: 'medium',
+  //     actionUrl: '/messages/1',
+  //     actionLabel: 'Read Message',
+  //   },
+  //   {
+  //     id: '5',
+  //     type: 'prescription',
+  //     title: 'Prescription Expiring Soon',
+  //     description: 'Your prescription for Metformin will expire in 7 days. Request a refill now.',
+  //     timestamp: '3 days ago',
+  //     read: true,
+  //     priority: 'medium',
+  //     actionUrl: '/patient/prescriptions/2',
+  //     actionLabel: 'Request Refill',
+  //   },
+  //   {
+  //     id: '6',
+  //     type: 'system',
+  //     title: 'Account Security Update',
+  //     description: 'Two-factor authentication is now available. Enable it to secure your account.',
+  //     timestamp: '1 week ago',
+  //     read: true,
+  //     priority: 'low',
+  //     actionUrl: '/patient/settings',
+  //     actionLabel: 'Enable 2FA',
+  //   },
+  // ]);
+
+  // Use API data or fallback to empty array
+  const notifications = notificationsData || [];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Loading notifications...</div>
+      </div>
+    );
+  }
 
   const tabs: Tab[] = [
-    { key: 'all', label: 'All' },
-    { key: 'unread', label: 'Unread' },
-    { key: 'prescription', label: 'Prescriptions' },
-    { key: 'appointment', label: 'Appointments' },
+    { key: "all", label: "All" },
+    { key: "unread", label: "Unread" },
+    { key: "prescription", label: "Prescriptions" },
+    { key: "appointment", label: "Appointments" },
   ];
 
-  // Filter notifications based on active tab
-  const filteredNotifications = notifications.filter((notification) => {
-    if (activeTab === 'all') return true;
-    if (activeTab === 'unread') return !notification.read;
-    return notification.type === activeTab;
-  });
+  // Filter notifications based on active tab (client-side for additional filtering)
+  const filteredNotifications = useMemo(() => {
+    if (activeTab === "all") return notifications;
+    if (activeTab === "unread") return notifications.filter((n) => !n.read);
+    return notifications.filter((n) => n.type === activeTab);
+  }, [notifications, activeTab]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
+  // TODO: Implement API calls for these actions
   const markAsRead = (id: string) => {
-    setNotifications(
-      notifications.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
+    // TODO: Call API to mark notification as read
+    console.log("Mark as read:", id);
   };
 
   const markAllAsRead = () => {
-    setNotifications(notifications.map((n) => ({ ...n, read: true })));
+    // TODO: Call API to mark all notifications as read
+    console.log("Mark all as read");
   };
 
   const deleteNotification = (id: string) => {
-    setNotifications(notifications.filter((n) => n.id !== id));
+    // TODO: Call API to delete notification
+    console.log("Delete notification:", id);
   };
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'prescription':
+      case "prescription":
         return (
           <svg
             className="w-6 h-6 text-green-600"
@@ -133,7 +159,7 @@ const Notifications: React.FC = () => {
             />
           </svg>
         );
-      case 'appointment':
+      case "appointment":
         return (
           <svg
             className="w-6 h-6 text-blue-600"
@@ -149,7 +175,7 @@ const Notifications: React.FC = () => {
             />
           </svg>
         );
-      case 'message':
+      case "message":
         return (
           <svg
             className="w-6 h-6 text-purple-600"
@@ -193,11 +219,11 @@ const Notifications: React.FC = () => {
           <p className="mt-1 text-sm text-gray-500">
             {unreadCount > 0 ? (
               <>
-                You have <span className="font-medium">{unreadCount}</span> unread
-                notification{unreadCount !== 1 ? 's' : ''}
+                You have <span className="font-medium">{unreadCount}</span>{" "}
+                unread notification{unreadCount !== 1 ? "s" : ""}
               </>
             ) : (
-              'You\'re all caught up!'
+              "You're all caught up!"
             )}
           </p>
         </div>
@@ -232,7 +258,9 @@ const Notifications: React.FC = () => {
             </div>
             <div className="ml-3">
               <p className="text-sm font-medium text-gray-500">Total</p>
-              <p className="text-xl font-semibold text-gray-900">{notifications.length}</p>
+              <p className="text-xl font-semibold text-gray-900">
+                {notifications.length}
+              </p>
             </div>
           </div>
         </div>
@@ -256,7 +284,9 @@ const Notifications: React.FC = () => {
             </div>
             <div className="ml-3">
               <p className="text-sm font-medium text-gray-500">Unread</p>
-              <p className="text-xl font-semibold text-gray-900">{unreadCount}</p>
+              <p className="text-xl font-semibold text-gray-900">
+                {unreadCount}
+              </p>
             </div>
           </div>
         </div>
@@ -281,7 +311,7 @@ const Notifications: React.FC = () => {
             <div className="ml-3">
               <p className="text-sm font-medium text-gray-500">Prescriptions</p>
               <p className="text-xl font-semibold text-gray-900">
-                {notifications.filter((n) => n.type === 'prescription').length}
+                {notifications.filter((n) => n.type === "prescription").length}
               </p>
             </div>
           </div>
@@ -307,7 +337,7 @@ const Notifications: React.FC = () => {
             <div className="ml-3">
               <p className="text-sm font-medium text-gray-500">Appointments</p>
               <p className="text-xl font-semibold text-gray-900">
-                {notifications.filter((n) => n.type === 'appointment').length}
+                {notifications.filter((n) => n.type === "appointment").length}
               </p>
             </div>
           </div>
@@ -336,11 +366,13 @@ const Notifications: React.FC = () => {
                   d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
                 />
               </svg>
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No notifications</h3>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">
+                No notifications
+              </h3>
               <p className="mt-1 text-sm text-gray-500">
-                {activeTab === 'unread'
-                  ? 'You\'re all caught up! No unread notifications.'
-                  : 'No notifications in this category.'}
+                {activeTab === "unread"
+                  ? "You're all caught up! No unread notifications."
+                  : "No notifications in this category."}
               </p>
             </div>
           ) : (
@@ -348,14 +380,14 @@ const Notifications: React.FC = () => {
               <div
                 key={notification.id}
                 className={`p-6 hover:bg-gray-50 transition-colors ${
-                  !notification.read ? 'bg-blue-50' : ''
+                  !notification.read ? "bg-blue-50" : ""
                 }`}
               >
                 <div className="flex items-start space-x-4">
                   {/* Icon */}
                   <div
                     className={`flex-shrink-0 h-12 w-12 rounded-full flex items-center justify-center ${
-                      !notification.read ? 'bg-white' : 'bg-gray-100'
+                      !notification.read ? "bg-white" : "bg-gray-100"
                     }`}
                   >
                     {getNotificationIcon(notification.type)}
@@ -375,7 +407,7 @@ const Notifications: React.FC = () => {
                               <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-500"></span>
                             </span>
                           )}
-                          {notification.priority === 'high' && (
+                          {notification.priority === "high" && (
                             <Badge variant="danger" size="sm">
                               Urgent
                             </Badge>

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { SearchBar, Badge, Button } from '../../common';
+import React, { useState, useMemo } from "react";
+import { SearchBar, Badge, Button } from "../../common";
+import { useApiGet } from "../../../hooks/useApi";
 
 interface Doctor {
   id: string;
@@ -16,88 +17,112 @@ interface Doctor {
 }
 
 const DoctorList: React.FC = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [specialtyFilter, setSpecialtyFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [specialtyFilter, setSpecialtyFilter] = useState<string>("all");
 
-  // Mock data - replace with actual API call
-  const doctors: Doctor[] = [
-    {
-      id: '1',
-      name: 'Dr. Sarah Smith',
-      specialty: 'Internal Medicine',
-      rating: 4.9,
-      reviewCount: 156,
-      experience: 15,
-      hospital: 'City Medical Center',
-      availability: 'Available Today',
-      acceptingNewPatients: true,
-      languages: ['English', 'Spanish'],
-      distance: '0.5 miles',
-    },
-    {
-      id: '2',
-      name: 'Dr. Michael Chen',
-      specialty: 'Cardiology',
-      rating: 4.8,
-      reviewCount: 203,
-      experience: 20,
-      hospital: 'Heart Health Institute',
-      availability: 'Next available: Nov 25',
-      acceptingNewPatients: true,
-      languages: ['English', 'Mandarin'],
-      distance: '1.2 miles',
-    },
-    {
-      id: '3',
-      name: 'Dr. Emily Rodriguez',
-      specialty: 'Pediatrics',
-      rating: 5.0,
-      reviewCount: 89,
-      experience: 10,
-      hospital: 'Children\'s Health Center',
-      availability: 'Available Tomorrow',
-      acceptingNewPatients: true,
-      languages: ['English', 'Spanish', 'Portuguese'],
-      distance: '2.1 miles',
-    },
-    {
-      id: '4',
-      name: 'Dr. James Wilson',
-      specialty: 'Orthopedics',
-      rating: 4.7,
-      reviewCount: 142,
-      experience: 18,
-      hospital: 'Orthopedic Specialists',
-      availability: 'Next available: Dec 1',
-      acceptingNewPatients: false,
-      languages: ['English'],
-      distance: '3.5 miles',
-    },
-    {
-      id: '5',
-      name: 'Dr. Lisa Patel',
-      specialty: 'Dermatology',
-      rating: 4.9,
-      reviewCount: 198,
-      experience: 12,
-      hospital: 'Skin Care Clinic',
-      availability: 'Available Today',
-      acceptingNewPatients: true,
-      languages: ['English', 'Hindi', 'Gujarati'],
-      distance: '1.8 miles',
-    },
-  ];
+  // Fetch doctors from API
+  const { data: doctorsData, isLoading } = useApiGet<Doctor[]>(
+    ["doctors", specialtyFilter],
+    `/api/v1/patients/doctors${
+      specialtyFilter && specialtyFilter !== "all"
+        ? `?specialty=${specialtyFilter}`
+        : ""
+    }`
+  );
 
-  // Filter doctors
-  const filteredDoctors = doctors.filter((doctor) => {
-    const matchesSearch =
-      doctor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doctor.specialty.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doctor.hospital.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesSpecialty =
-      specialtyFilter === 'all' || doctor.specialty === specialtyFilter;
-    return matchesSearch && matchesSpecialty;
-  });
+  // Commented out hardcoded data - now using API
+  // const doctors: Doctor[] = [
+  //   {
+  //     id: '1',
+  //     name: 'Dr. Sarah Smith',
+  //     specialty: 'Internal Medicine',
+  //     rating: 4.9,
+  //     reviewCount: 156,
+  //     experience: 15,
+  //     hospital: 'City Medical Center',
+  //     availability: 'Available Today',
+  //     acceptingNewPatients: true,
+  //     languages: ['English', 'Spanish'],
+  //     distance: '0.5 miles',
+  //   },
+  //   {
+  //     id: '2',
+  //     name: 'Dr. Michael Chen',
+  //     specialty: 'Cardiology',
+  //     rating: 4.8,
+  //     reviewCount: 203,
+  //     experience: 20,
+  //     hospital: 'Heart Health Institute',
+  //     availability: 'Next available: Nov 25',
+  //     acceptingNewPatients: true,
+  //     languages: ['English', 'Mandarin'],
+  //     distance: '1.2 miles',
+  //   },
+  //   {
+  //     id: '3',
+  //     name: 'Dr. Emily Rodriguez',
+  //     specialty: 'Pediatrics',
+  //     rating: 5.0,
+  //     reviewCount: 89,
+  //     experience: 10,
+  //     hospital: 'Children\'s Health Center',
+  //     availability: 'Available Tomorrow',
+  //     acceptingNewPatients: true,
+  //     languages: ['English', 'Spanish', 'Portuguese'],
+  //     distance: '2.1 miles',
+  //   },
+  //   {
+  //     id: '4',
+  //     name: 'Dr. James Wilson',
+  //     specialty: 'Orthopedics',
+  //     rating: 4.7,
+  //     reviewCount: 142,
+  //     experience: 18,
+  //     hospital: 'Orthopedic Specialists',
+  //     availability: 'Next available: Dec 1',
+  //     acceptingNewPatients: false,
+  //     languages: ['English'],
+  //     distance: '3.5 miles',
+  //   },
+  //   {
+  //     id: '5',
+  //     name: 'Dr. Lisa Patel',
+  //     specialty: 'Dermatology',
+  //     rating: 4.9,
+  //     reviewCount: 198,
+  //     experience: 12,
+  //     hospital: 'Skin Care Clinic',
+  //     availability: 'Available Today',
+  //     acceptingNewPatients: true,
+  //     languages: ['English', 'Hindi', 'Gujarati'],
+  //     distance: '1.8 miles',
+  //   },
+  // ];
+
+  // Use API data or fallback to empty array
+  const doctors = doctorsData || [];
+
+  // Filter doctors (client-side search)
+  const filteredDoctors = useMemo(() => {
+    if (!searchQuery) return doctors;
+    return doctors.filter((doctor) => {
+      const matchesSearch =
+        doctor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        doctor.specialty.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        doctor.hospital.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSpecialty =
+        specialtyFilter === "all" || doctor.specialty === specialtyFilter;
+      return matchesSearch && matchesSpecialty;
+    });
+  }, [doctors, searchQuery, specialtyFilter]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Loading doctors...</div>
+      </div>
+    );
+  }
 
   // Get unique specialties
   const specialties = Array.from(new Set(doctors.map((d) => d.specialty)));
@@ -157,7 +182,8 @@ const DoctorList: React.FC = () => {
       {/* Results Count */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-600">
-          Showing <span className="font-medium">{filteredDoctors.length}</span> doctors
+          Showing <span className="font-medium">{filteredDoctors.length}</span>{" "}
+          doctors
           {searchQuery && ` matching "${searchQuery}"`}
         </p>
         <select className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
@@ -181,9 +207,9 @@ const DoctorList: React.FC = () => {
                 <div className="h-20 w-20 rounded-full bg-primary-100 flex items-center justify-center">
                   <span className="text-primary-600 font-semibold text-2xl">
                     {doctor.name
-                      .split(' ')
+                      .split(" ")
                       .map((n) => n[0])
-                      .join('')}
+                      .join("")}
                   </span>
                 </div>
               </div>
@@ -202,7 +228,9 @@ const DoctorList: React.FC = () => {
                         </Badge>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 mt-1">{doctor.specialty}</p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {doctor.specialty}
+                    </p>
                     <div className="mt-2 flex items-center space-x-4 text-sm text-gray-600">
                       <span className="flex items-center">
                         <svg
@@ -243,7 +271,10 @@ const DoctorList: React.FC = () => {
                   </div>
 
                   <div className="flex flex-col items-end space-y-2">
-                    <Button variant="primary" className="btn-gradient text-white">
+                    <Button
+                      variant="primary"
+                      className="btn-gradient text-white"
+                    >
                       Book Appointment
                     </Button>
                     <Button variant="secondary" size="sm">
@@ -298,7 +329,9 @@ const DoctorList: React.FC = () => {
                 d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
               />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No doctors found</h3>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">
+              No doctors found
+            </h3>
             <p className="mt-1 text-sm text-gray-500">
               Try adjusting your search or filter criteria.
             </p>
