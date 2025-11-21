@@ -1,147 +1,192 @@
-import { createBrowserRouter } from 'react-router-dom';
-import type { RouteObject } from 'react-router-dom';
-import Layout from '../components/layout/Layout';
-import Dashboard from '../components/pages/Dashboard';
-import Profile from '../components/pages/Profile';
-import Settings from '../components/pages/Settings';
-import Login from '../components/pages/Login';
-import SignUp from '../components/pages/SignUp';
-import Home from '../components/pages/Home';
+import { lazy, Suspense } from "react";
+import { createBrowserRouter } from "react-router-dom";
+import type { RouteObject } from "react-router-dom";
+import Layout from "../components/layout/Layout";
 
-// Doctor pages
-import PatientList from '../components/pages/doctor/PatientList';
-import PatientProfile from '../components/pages/doctor/PatientProfile';
-import CreatePrescription from '../components/pages/doctor/CreatePrescription';
-import PrescriptionHistory from '../components/pages/doctor/PrescriptionHistory';
-import EditPrescription from '../components/pages/doctor/EditPrescription';
-import DoctorSettings from '../components/pages/doctor/DoctorSettings';
+// Lazy load pages for code splitting
+const Home = lazy(() => import("../components/pages/Home"));
+const Login = lazy(() => import("../components/pages/Login"));
+const SignUp = lazy(() => import("../components/pages/SignUp"));
+const Dashboard = lazy(() => import("../components/pages/Dashboard"));
+const Profile = lazy(() => import("../components/pages/Profile"));
+const Settings = lazy(() => import("../components/pages/Settings"));
 
-// Patient pages
-import PatientDashboard from '../components/pages/patient/PatientDashboard';
-import MyPrescriptions from '../components/pages/patient/MyPrescriptions';
-import PrescriptionDetail from '../components/pages/patient/PrescriptionDetail';
-import DoctorList from '../components/pages/patient/DoctorList';
-import MedicalHistory from '../components/pages/patient/MedicalHistory';
-import PatientSettings from '../components/pages/patient/PatientSettings';
+// Doctor pages - lazy loaded
+const PatientList = lazy(
+  () => import("../components/pages/doctor/PatientList")
+);
+const PatientProfile = lazy(
+  () => import("../components/pages/doctor/PatientProfile")
+);
+const CreatePrescription = lazy(
+  () => import("../components/pages/doctor/CreatePrescription")
+);
+const PrescriptionHistory = lazy(
+  () => import("../components/pages/doctor/PrescriptionHistory")
+);
+const EditPrescription = lazy(
+  () => import("../components/pages/doctor/EditPrescription")
+);
+const DoctorSettings = lazy(
+  () => import("../components/pages/doctor/DoctorSettings")
+);
 
-// Shared pages
-import Notifications from '../components/pages/shared/Notifications';
-import Help from '../components/pages/shared/Help';
-import Terms from '../components/pages/shared/Terms';
-import Privacy from '../components/pages/shared/Privacy';
+// Patient pages - lazy loaded
+const PatientDashboard = lazy(
+  () => import("../components/pages/patient/PatientDashboard")
+);
+const MyPrescriptions = lazy(
+  () => import("../components/pages/patient/MyPrescriptions")
+);
+const PrescriptionDetail = lazy(
+  () => import("../components/pages/patient/PrescriptionDetail")
+);
+const DoctorList = lazy(() => import("../components/pages/patient/DoctorList"));
+const MedicalHistory = lazy(
+  () => import("../components/pages/patient/MedicalHistory")
+);
+const PatientSettings = lazy(
+  () => import("../components/pages/patient/PatientSettings")
+);
+
+// Shared pages - lazy loaded
+const Notifications = lazy(
+  () => import("../components/pages/shared/Notifications")
+);
+const Help = lazy(() => import("../components/pages/shared/Help"));
+const Terms = lazy(() => import("../components/pages/shared/Terms"));
+const Privacy = lazy(() => import("../components/pages/shared/Privacy"));
+
+// Loading component for Suspense fallback
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  </div>
+);
+
+// Wrapper function to create a Suspense-wrapped component for routes
+const withSuspense = (
+  Component: React.LazyExoticComponent<React.ComponentType<any>>
+) => {
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <Component />
+    </Suspense>
+  );
+};
 
 const routes: RouteObject[] = [
   {
-    path: '/',
-    element: <Home />,
+    path: "/",
+    element: withSuspense(Home),
   },
   {
-    path: '/login',
-    element: <Login />,
+    path: "/login",
+    element: withSuspense(Login),
   },
   {
-    path: '/signup',
-    element: <SignUp />,
+    path: "/signup",
+    element: withSuspense(SignUp),
   },
   {
-    path: '/terms',
-    element: <Terms />,
+    path: "/terms",
+    element: withSuspense(Terms),
   },
   {
-    path: '/privacy',
-    element: <Privacy />,
+    path: "/privacy",
+    element: withSuspense(Privacy),
   },
   {
-    path: '/dashboard',
+    path: "/dashboard",
     element: <Layout />,
     children: [
       {
         index: true,
-        element: <Dashboard />,
+        element: withSuspense(Dashboard),
       },
       {
-        path: 'profile',
-        element: <Profile />,
+        path: "profile",
+        element: withSuspense(Profile),
       },
       {
-        path: 'settings',
-        element: <Settings />,
+        path: "settings",
+        element: withSuspense(Settings),
       },
       // Doctor routes
       {
-        path: 'doctor-settings',
-        element: <DoctorSettings />,
+        path: "doctor-settings",
+        element: withSuspense(DoctorSettings),
       },
       // Patient management routes (for doctors)
       {
-        path: 'patients',
-        element: <PatientList />,
+        path: "patients",
+        element: withSuspense(PatientList),
       },
       {
-        path: 'patients/:patientId',
-        element: <PatientProfile />,
+        path: "patients/:patientId",
+        element: withSuspense(PatientProfile),
       },
       // Prescription management routes (for doctors)
       {
-        path: 'prescriptions',
-        element: <PrescriptionHistory />,
+        path: "prescriptions",
+        element: withSuspense(PrescriptionHistory),
       },
       {
-        path: 'prescriptions/new',
-        element: <CreatePrescription />,
+        path: "prescriptions/new",
+        element: withSuspense(CreatePrescription),
       },
       {
-        path: 'prescriptions/:prescriptionId/edit',
-        element: <EditPrescription />,
+        path: "prescriptions/:prescriptionId/edit",
+        element: withSuspense(EditPrescription),
       },
       // Shared routes (for doctors)
       {
-        path: 'notifications',
-        element: <Notifications />,
+        path: "notifications",
+        element: withSuspense(Notifications),
       },
       {
-        path: 'help',
-        element: <Help />,
+        path: "help",
+        element: withSuspense(Help),
       },
     ],
   },
   // Patient routes
   {
-    path: '/patient',
+    path: "/patient",
     element: <Layout />,
     children: [
       {
         index: true,
-        element: <PatientDashboard />,
+        element: withSuspense(PatientDashboard),
       },
       {
-        path: 'prescriptions',
-        element: <MyPrescriptions />,
+        path: "prescriptions",
+        element: withSuspense(MyPrescriptions),
       },
       {
-        path: 'prescriptions/:prescriptionId',
-        element: <PrescriptionDetail />,
+        path: "prescriptions/:prescriptionId",
+        element: withSuspense(PrescriptionDetail),
       },
       {
-        path: 'doctors',
-        element: <DoctorList />,
+        path: "doctors",
+        element: withSuspense(DoctorList),
       },
       {
-        path: 'medical-history',
-        element: <MedicalHistory />,
+        path: "medical-history",
+        element: withSuspense(MedicalHistory),
       },
       {
-        path: 'settings',
-        element: <PatientSettings />,
+        path: "settings",
+        element: withSuspense(PatientSettings),
       },
       // Shared routes (for patients)
       {
-        path: 'notifications',
-        element: <Notifications />,
+        path: "notifications",
+        element: withSuspense(Notifications),
       },
       {
-        path: 'help',
-        element: <Help />,
+        path: "help",
+        element: withSuspense(Help),
       },
     ],
   },
