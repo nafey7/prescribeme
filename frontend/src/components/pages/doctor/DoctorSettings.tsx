@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button, Input, Tabs } from '../../common';
 import type { Tab } from '../../common/Tabs';
+import { useApiGet } from '../../../hooks/useApi';
+import { httpPatch, httpPost } from '../../../utils/http';
+import { useAuthStore } from '../../../store/authStore';
 
 const profileSchema = z.object({
   firstName: z.string().min(2, 'First name is required'),
@@ -32,51 +35,108 @@ const passwordSchema = z.object({
 type ProfileFormData = z.infer<typeof profileSchema>;
 type PasswordFormData = z.infer<typeof passwordSchema>;
 
+interface SettingsApi {
+  role: string;
+  email: string;
+  username: string;
+  full_name: string;
+  first_name: string;
+  last_name: string;
+  phone?: string | null;
+  specialty?: string | null;
+  license_number?: string | null;
+  clinic?: string | null;
+  address?: string | null;
+}
+
 const DoctorSettings: React.FC = () => {
   const [activeTab, setActiveTab] = useState('profile');
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const { setBackendUser, user } = useAuthStore();
 
-  // Mock doctor data
-  const doctor = {
-    firstName: 'John',
-    lastName: 'Smith',
-    email: 'dr.smith@hospital.com',
-    phone: '+1 (555) 987-6543',
-    specialty: 'Internal Medicine',
-    licenseNumber: 'MD123456',
-    clinic: 'City Medical Center',
-    address: '456 Health Ave, San Francisco, CA 94103',
-  };
+  const { data: settings, isLoading } = useApiGet<SettingsApi>(
+    ['shared-settings'],
+    '/api/v1/shared/settings'
+  );
 
   const profileForm = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
-    defaultValues: doctor,
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      specialty: '',
+      licenseNumber: '',
+      clinic: '',
+      address: '',
+    },
   });
 
   const passwordForm = useForm<PasswordFormData>({
     resolver: zodResolver(passwordSchema),
   });
 
+  useEffect(() => {
+    if (!settings) return;
+    profileForm.reset({
+      firstName: settings.first_name || settings.full_name.split(' ')[0] || '',
+      lastName: settings.last_name || settings.full_name.split(' ').slice(1).join(' ') || '',
+      email: settings.email,
+      phone: settings.phone || '',
+      specialty: settings.specialty || '',
+      licenseNumber: settings.license_number || '',
+      clinic: settings.clinic || '',
+      address: settings.address || '',
+    });
+  }, [settings, profileForm]);
+
   const onProfileSubmit = async (data: ProfileFormData) => {
+    setFormError(null);
     try {
-      console.log('Profile data:', data);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const full_name = `${data.firstName.trim()} ${data.lastName.trim()}`.trim();
+      await httpPatch('/api/v1/shared/settings', {
+        full_name,
+        specialty: data.specialty,
+        hospital: data.clinic,
+        license_number: data.licenseNumber,
+        phone: data.phone,
+        practice_address: data.address,
+      });
+      if (user) {
+        setBackendUser({
+          id: user.id,
+          email: data.email,
+          username: user.username,
+          full_name,
+          role: user.role,
+          is_active: user.isActive,
+          is_verified: user.isVerified,
+          created_at: user.createdAt,
+        });
+      }
       setShowSuccessMessage(true);
       setTimeout(() => setShowSuccessMessage(false), 3000);
-    } catch (error) {
-      console.error('Error updating profile:', error);
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      setFormError(err.message || 'Failed to save profile');
     }
   };
 
   const onPasswordSubmit = async (data: PasswordFormData) => {
+    setFormError(null);
     try {
-      console.log('Password change:', data);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await httpPost('/api/v1/shared/change-password', {
+        current_password: data.currentPassword,
+        new_password: data.newPassword,
+      });
       passwordForm.reset();
       setShowSuccessMessage(true);
       setTimeout(() => setShowSuccessMessage(false), 3000);
-    } catch (error) {
-      console.error('Error changing password:', error);
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      setFormError(err.message || 'Failed to change password');
     }
   };
 
@@ -87,6 +147,17 @@ const DoctorSettings: React.FC = () => {
     { key: 'notifications', label: 'Notifications' },
   ];
 
+  if (isLoading || !settings) {
+    return (
+      <div className="flex items-center justify-center h-64 text-gray-500">
+        Loading settings...
+      </div>
+    );
+  }
+
+  const fn = settings.first_name || settings.full_name.split(' ')[0] || '?';
+  const ln = settings.last_name || settings.full_name.split(' ').slice(1).join(' ') || '?';
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -96,6 +167,12 @@ const DoctorSettings: React.FC = () => {
           Manage your account settings and preferences
         </p>
       </div>
+
+      {formError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
+          {formError}
+        </div>
+      )}
 
       {/* Success Message */}
       {showSuccessMessage && (
@@ -137,7 +214,8 @@ const DoctorSettings: React.FC = () => {
                 <div className="flex-shrink-0">
                   <div className="h-24 w-24 rounded-full bg-primary-100 flex items-center justify-center">
                     <span className="text-primary-600 font-semibold text-3xl">
-                      {doctor.firstName[0]}{doctor.lastName[0]}
+                      {fn[0]}
+                      {ln[0] || fn[0]}
                     </span>
                   </div>
                 </div>
@@ -168,6 +246,7 @@ const DoctorSettings: React.FC = () => {
                 <Input
                   label="Email Address"
                   type="email"
+                  disabled
                   register={profileForm.register('email')}
                   error={profileForm.formState.errors.email}
                 />

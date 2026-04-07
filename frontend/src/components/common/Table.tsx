@@ -15,7 +15,7 @@ interface TableProps<T> {
   emptyMessage?: string;
 }
 
-function Table<T extends Record<string, any>>({
+function Table<T extends object>({
   columns,
   data,
   onRowClick,
@@ -61,7 +61,9 @@ function Table<T extends Record<string, any>>({
                   >
                     {column.render
                       ? column.render(item)
-                      : item[column.key]}
+                      : String(
+                          (item as Record<string, unknown>)[column.key] ?? ""
+                        )}
                   </td>
                 ))}
               </tr>

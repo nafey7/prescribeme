@@ -14,6 +14,7 @@ interface Patient {
   lastVisit: string;
   status: "active" | "inactive";
   conditions?: string[];
+  allergies?: string[];
 }
 
 // Commented out hardcoded data - now using API
@@ -76,18 +77,8 @@ const PatientList: React.FC = () => {
     }`
   );
 
-  // Use API data or fallback to empty array
   const patients = patientsData || [];
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading patients...</div>
-      </div>
-    );
-  }
-
-  // Filter patients based on search query (client-side for additional filtering)
   const filteredPatients = useMemo(() => {
     if (!searchQuery) return patients;
     return patients.filter(
@@ -97,6 +88,14 @@ const PatientList: React.FC = () => {
         (patient.phone && patient.phone.includes(searchQuery))
     );
   }, [patients, searchQuery]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Loading patients...</div>
+      </div>
+    );
+  }
 
   const columns: Column<Patient>[] = [
     {

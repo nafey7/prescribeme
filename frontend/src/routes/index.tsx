@@ -1,7 +1,9 @@
-import { lazy, Suspense } from "react";
+import { lazy } from "react";
 import { createBrowserRouter } from "react-router-dom";
 import type { RouteObject } from "react-router-dom";
-import Layout from "../components/layout/Layout";
+import DoctorLayout from "../components/layout/DoctorLayout";
+import PatientLayout from "../components/layout/PatientLayout";
+import { withSuspense } from "./routeUtils";
 
 // Lazy load pages for code splitting
 const Home = lazy(() => import("../components/pages/Home"));
@@ -56,24 +58,8 @@ const Notifications = lazy(
 const Help = lazy(() => import("../components/pages/shared/Help"));
 const Terms = lazy(() => import("../components/pages/shared/Terms"));
 const Privacy = lazy(() => import("../components/pages/shared/Privacy"));
-
-// Loading component for Suspense fallback
-const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-screen">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-  </div>
-);
-
-// Wrapper function to create a Suspense-wrapped component for routes
-const withSuspense = (
-  Component: React.LazyExoticComponent<React.ComponentType<any>>
-) => {
-  return (
-    <Suspense fallback={<PageLoader />}>
-      <Component />
-    </Suspense>
-  );
-};
+const ForgotPassword = lazy(() => import("../components/pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("../components/pages/ResetPassword"));
 
 const routes: RouteObject[] = [
   {
@@ -89,6 +75,14 @@ const routes: RouteObject[] = [
     element: withSuspense(SignUp),
   },
   {
+    path: "/forgot-password",
+    element: withSuspense(ForgotPassword),
+  },
+  {
+    path: "/reset-password",
+    element: withSuspense(ResetPassword),
+  },
+  {
     path: "/terms",
     element: withSuspense(Terms),
   },
@@ -98,7 +92,7 @@ const routes: RouteObject[] = [
   },
   {
     path: "/dashboard",
-    element: <Layout />,
+    element: <DoctorLayout />,
     children: [
       {
         index: true,
@@ -153,7 +147,7 @@ const routes: RouteObject[] = [
   // Patient routes
   {
     path: "/patient",
-    element: <Layout />,
+    element: <PatientLayout />,
     children: [
       {
         index: true,

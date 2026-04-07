@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button, Input, Tabs } from '../../common';
 import type { Tab } from '../../common/Tabs';
+import { useApiGet } from '../../../hooks/useApi';
+import { httpPatch, httpPost } from '../../../utils/http';
+import { useAuthStore } from '../../../store/authStore';
 
 const profileSchema = z.object({
   firstName: z.string().min(2, 'First name is required'),
@@ -35,54 +38,118 @@ const passwordSchema = z.object({
 type ProfileFormData = z.infer<typeof profileSchema>;
 type PasswordFormData = z.infer<typeof passwordSchema>;
 
+interface PatientSettingsApi {
+  email: string;
+  username: string;
+  full_name: string;
+  first_name: string;
+  last_name: string;
+  phone?: string | null;
+  date_of_birth?: string | null;
+  gender?: string | null;
+  blood_type?: string | null;
+  address?: string | null;
+}
+
 const PatientSettings: React.FC = () => {
   const [activeTab, setActiveTab] = useState('profile');
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const { setBackendUser, user } = useAuthStore();
 
-  // Mock patient data
-  const patient = {
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'john.doe@email.com',
-    phone: '+1 (555) 123-4567',
-    dateOfBirth: '1980-05-15',
-    gender: 'male',
-    bloodType: 'A+',
-    address: '123 Main Street',
-    city: 'San Francisco',
-    state: 'CA',
-    zipCode: '94102',
-  };
+  const { data: settings, isLoading } = useApiGet<PatientSettingsApi>(
+    ['shared-settings'],
+    '/api/v1/shared/settings'
+  );
 
   const profileForm = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
-    defaultValues: patient,
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      dateOfBirth: '',
+      gender: '',
+      bloodType: '',
+      address: '',
+      city: '',
+      state: '',
+      zipCode: '',
+    },
   });
 
   const passwordForm = useForm<PasswordFormData>({
     resolver: zodResolver(passwordSchema),
   });
 
+  useEffect(() => {
+    if (!settings) return;
+    const addr = settings.address || '';
+    profileForm.reset({
+      firstName: settings.first_name || settings.full_name.split(' ')[0] || '',
+      lastName: settings.last_name || settings.full_name.split(' ').slice(1).join(' ') || '',
+      email: settings.email,
+      phone: settings.phone || '',
+      dateOfBirth: settings.date_of_birth || '',
+      gender: settings.gender || '',
+      bloodType: settings.blood_type || '',
+      address: addr,
+      city: '',
+      state: '',
+      zipCode: '',
+    });
+  }, [settings, profileForm]);
+
   const onProfileSubmit = async (data: ProfileFormData) => {
+    setFormError(null);
     try {
-      console.log('Profile data:', data);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const full_name = `${data.firstName.trim()} ${data.lastName.trim()}`.trim();
+      const addrParts = [data.address, data.city, data.state, data.zipCode].filter(
+        (x) => x && String(x).trim()
+      );
+      const combinedAddress = addrParts.length ? addrParts.join(', ') : undefined;
+      await httpPatch('/api/v1/shared/settings', {
+        full_name,
+        phone: data.phone,
+        gender: data.gender,
+        blood_type: data.bloodType || undefined,
+        date_of_birth: data.dateOfBirth || undefined,
+        address: combinedAddress,
+      });
+      if (user) {
+        setBackendUser({
+          id: user.id,
+          email: data.email,
+          username: user.username,
+          full_name,
+          role: user.role,
+          is_active: user.isActive,
+          is_verified: user.isVerified,
+          created_at: user.createdAt,
+        });
+      }
       setShowSuccessMessage(true);
       setTimeout(() => setShowSuccessMessage(false), 3000);
-    } catch (error) {
-      console.error('Error updating profile:', error);
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      setFormError(err.message || 'Failed to save profile');
     }
   };
 
   const onPasswordSubmit = async (data: PasswordFormData) => {
+    setFormError(null);
     try {
-      console.log('Password change:', data);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await httpPost('/api/v1/shared/change-password', {
+        current_password: data.currentPassword,
+        new_password: data.newPassword,
+      });
       passwordForm.reset();
       setShowSuccessMessage(true);
       setTimeout(() => setShowSuccessMessage(false), 3000);
-    } catch (error) {
-      console.error('Error changing password:', error);
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      setFormError(err.message || 'Failed to change password');
     }
   };
 
@@ -93,6 +160,17 @@ const PatientSettings: React.FC = () => {
     { key: 'privacy', label: 'Privacy' },
   ];
 
+  if (isLoading || !settings) {
+    return (
+      <div className="flex items-center justify-center h-64 text-gray-500">
+        Loading settings...
+      </div>
+    );
+  }
+
+  const fn = settings.first_name || settings.full_name.split(' ')[0] || '?';
+  const ln = settings.last_name || settings.full_name.split(' ').slice(1).join(' ') || '?';
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -102,6 +180,12 @@ const PatientSettings: React.FC = () => {
           Manage your account settings and preferences
         </p>
       </div>
+
+      {formError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
+          {formError}
+        </div>
+      )}
 
       {/* Success Message */}
       {showSuccessMessage && (
@@ -144,7 +228,8 @@ const PatientSettings: React.FC = () => {
                 <div className="flex-shrink-0">
                   <div className="h-24 w-24 rounded-full bg-primary-100 flex items-center justify-center">
                     <span className="text-primary-600 font-semibold text-3xl">
-                      {patient.firstName[0]}{patient.lastName[0]}
+                      {fn[0]}
+                      {ln[0] || fn[0]}
                     </span>
                   </div>
                 </div>
@@ -177,6 +262,7 @@ const PatientSettings: React.FC = () => {
                   <Input
                     label="Email Address"
                     type="email"
+                    disabled
                     register={profileForm.register('email')}
                     error={profileForm.formState.errors.email}
                   />

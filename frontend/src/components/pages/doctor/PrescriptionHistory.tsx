@@ -112,18 +112,8 @@ const PrescriptionHistory: React.FC = () => {
     }`
   );
 
-  // Use API data or fallback to empty array
   const prescriptions = prescriptionsData || [];
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading prescriptions...</div>
-      </div>
-    );
-  }
-
-  // Filter prescriptions based on search query (client-side for additional filtering)
   const filteredPrescriptions = useMemo(() => {
     if (!searchQuery) return prescriptions;
     return prescriptions.filter((prescription) => {
@@ -139,6 +129,14 @@ const PrescriptionHistory: React.FC = () => {
       return matchesSearch && matchesStatus;
     });
   }, [prescriptions, searchQuery, statusFilter]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Loading prescriptions...</div>
+      </div>
+    );
+  }
 
   const columns: Column<Prescription>[] = [
     {

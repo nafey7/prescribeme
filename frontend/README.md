@@ -82,7 +82,7 @@ npm run lint
 Create a `.env.local` file with the following variables:
 
 ```env
-VITE_API_URL=http://localhost:5000/api
+VITE_API_URL=http://localhost:8000/api/v1
 VITE_APP_NAME=PrescribeMe
 VITE_ENV=development
 ```

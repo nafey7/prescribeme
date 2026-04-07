@@ -10,10 +10,19 @@ import type { ApiResponse, ApiError } from "../types";
  */
 export const handleApiError = (error: unknown): ApiError => {
   if (error instanceof AxiosErrorClass) {
+    const data = error.response?.data as
+      | { message?: string; detail?: string | string[] }
+      | undefined;
+    const detail = data?.detail;
+    const detailStr = Array.isArray(detail)
+      ? detail.map((d) => String(d)).join(", ")
+      : typeof detail === "string"
+        ? detail
+        : undefined;
     return {
       status: error.response?.status || 500,
-      message: error.response?.data?.message || error.message,
-      errors: error.response?.data?.errors,
+      message: detailStr || data?.message || error.message,
+      errors: (data as { errors?: Record<string, string[]> })?.errors,
     };
   }
   return {
