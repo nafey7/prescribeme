@@ -18,6 +18,8 @@ from app.models import (
     Notification,
     Pharmacy,
     RefreshToken,
+    CareRelationship,
+    PasswordResetToken,
 )  # Import document models for Beanie initialization
 
 
@@ -59,6 +61,8 @@ async def init_beanie():
                 Notification,
                 Pharmacy,
                 RefreshToken,
+                CareRelationship,
+                PasswordResetToken,
             ]
         )        
         print("✅ Database connection ready")

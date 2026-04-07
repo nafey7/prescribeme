@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config.settings import settings
 from app.routes import home, auth, doctors, patients, shared
 from app.database import init_beanie, close_database, seed_database
+from app.database.care_sync import sync_care_relationships_from_prescriptions
 
 
 @asynccontextmanager
@@ -20,7 +21,8 @@ async def lifespan(app: FastAPI):
     
     # Seed database with test data (if not already seeded)
     await seed_database()
-    
+    await sync_care_relationships_from_prescriptions()
+
     yield
     
     # Shutdown

@@ -14,6 +14,8 @@ from .appointment import Appointment
 from .notification import Notification
 from .pharmacy import Pharmacy
 from .refresh_token import RefreshToken
+from .care_relationship import CareRelationship
+from .password_reset_token import PasswordResetToken
 
 __all__ = [
     "User",
@@ -29,5 +31,7 @@ __all__ = [
     "Notification",
     "Pharmacy",
     "RefreshToken",
+    "CareRelationship",
+    "PasswordResetToken",
 ]
 

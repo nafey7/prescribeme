@@ -39,6 +39,12 @@ class Settings(BaseSettings):
     # CORS Configuration
     # Comma-separated list of allowed origins (e.g., "http://localhost:5173,http://localhost:3000")
     cors_origins: str = "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000"
+
+    # Password reset (dev: token is logged when smtp_host is empty)
+    password_reset_token_expire_minutes: int = 60
+    app_public_url: str = "http://localhost:3000"
+    smtp_host: str = ""
+    smtp_from: str = "noreply@prescribeme.local"
     
     @property
     def cors_origins_list(self) -> List[str]:
