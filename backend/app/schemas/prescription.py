@@ -80,4 +80,8 @@ class PrescriptionHistoryItemResponse(BaseModel):
     prescribedDate: str
     status: str
     prescribedBy: str
+    instructions: Optional[str] = None
+    notes: Optional[str] = None
+    refills: int = 0
+    refillsRemaining: int = 0
 

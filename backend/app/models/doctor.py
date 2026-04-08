@@ -22,6 +22,8 @@ class Doctor(Document):
     hospital: str = Field(..., description="Hospital or clinic name")
     experience_years: int = Field(..., description="Years of experience")
     license_number: Optional[str] = Field(None, description="Medical license number")
+    phone: Optional[str] = Field(None, description="Practice or contact phone")
+    practice_address: Optional[str] = Field(None, description="Office or practice street address")
     
     # Availability
     accepting_new_patients: bool = Field(default=True, description="Whether accepting new patients")

@@ -1,7 +1,7 @@
 """
 Patient Model
 """
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional
 from beanie import Document, Link
 from pydantic import Field
@@ -22,6 +22,7 @@ class Patient(Document):
     gender: Optional[str] = Field(None, description="Patient gender")
     phone: Optional[str] = Field(None, description="Phone number")
     address: Optional[str] = Field(None, description="Address")
+    date_of_birth: Optional[date] = Field(None, description="Date of birth")
     
     # Medical Information
     blood_type: Optional[str] = Field(None, description="Blood type (e.g., 'A+', 'O-')")

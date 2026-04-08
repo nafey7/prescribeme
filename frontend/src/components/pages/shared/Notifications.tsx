@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Badge, Tabs } from "../../common";
 import type { Tab } from "../../common/Tabs";
 import { useApiGet } from "../../../hooks/useApi";
+import { httpDelete, httpPatch, httpPost } from "../../../utils/http";
 
 interface Notification {
   id: string;
@@ -17,15 +19,19 @@ interface Notification {
 
 const Notifications: React.FC = () => {
   const [activeTab, setActiveTab] = useState("all");
+  const queryClient = useQueryClient();
 
-  // Fetch notifications from API
+  const notificationsUrl = useMemo(() => {
+    const params = new URLSearchParams();
+    if (activeTab === "unread") params.set("unread", "true");
+    else if (activeTab !== "all") params.set("type", activeTab);
+    const q = params.toString();
+    return `/api/v1/shared/notifications${q ? `?${q}` : ""}`;
+  }, [activeTab]);
+
   const { data: notificationsData, isLoading } = useApiGet<Notification[]>(
     ["notifications", activeTab],
-    `/api/v1/shared/notifications${
-      activeTab === "unread" ? "?unread=true" : ""
-    }${
-      activeTab !== "all" && activeTab !== "unread" ? `?type=${activeTab}` : ""
-    }`
+    notificationsUrl
   );
 
   // Commented out hardcoded data - now using API
@@ -98,8 +104,15 @@ const Notifications: React.FC = () => {
   //   },
   // ]);
 
-  // Use API data or fallback to empty array
   const notifications = notificationsData || [];
+
+  const filteredNotifications = useMemo(() => {
+    if (activeTab === "all") return notifications;
+    if (activeTab === "unread") return notifications.filter((n) => !n.read);
+    return notifications.filter((n) => n.type === activeTab);
+  }, [notifications, activeTab]);
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   if (isLoading) {
     return (
@@ -116,29 +129,23 @@ const Notifications: React.FC = () => {
     { key: "appointment", label: "Appointments" },
   ];
 
-  // Filter notifications based on active tab (client-side for additional filtering)
-  const filteredNotifications = useMemo(() => {
-    if (activeTab === "all") return notifications;
-    if (activeTab === "unread") return notifications.filter((n) => !n.read);
-    return notifications.filter((n) => n.type === activeTab);
-  }, [notifications, activeTab]);
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
-
-  // TODO: Implement API calls for these actions
-  const markAsRead = (id: string) => {
-    // TODO: Call API to mark notification as read
-    console.log("Mark as read:", id);
+  const invalidateNotifications = () => {
+    queryClient.invalidateQueries({ queryKey: ["notifications"] });
   };
 
-  const markAllAsRead = () => {
-    // TODO: Call API to mark all notifications as read
-    console.log("Mark all as read");
+  const markAsRead = async (id: string) => {
+    await httpPatch(`/api/v1/shared/notifications/${id}`, { read: true });
+    invalidateNotifications();
   };
 
-  const deleteNotification = (id: string) => {
-    // TODO: Call API to delete notification
-    console.log("Delete notification:", id);
+  const markAllAsRead = async () => {
+    await httpPost("/api/v1/shared/notifications/mark-all-read", {});
+    invalidateNotifications();
+  };
+
+  const deleteNotification = async (id: string) => {
+    await httpDelete(`/api/v1/shared/notifications/${id}`);
+    invalidateNotifications();
   };
 
   const getNotificationIcon = (type: string) => {

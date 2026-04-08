@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
-import { httpGet, httpPost, httpPut, httpDelete } from '../utils/http';
+import { httpGet, httpPost, httpPut, httpPatch, httpDelete } from '../utils/http';
 import type { ApiError } from '../types';
 
 /**
@@ -42,6 +42,19 @@ export function useApiPut<TData = unknown, TVariables = unknown>(
 ) {
   return useMutation<TData, ApiError, TVariables>({
     mutationFn: (data) => httpPut<TData, TVariables>(url, data),
+    ...options,
+  });
+}
+
+/**
+ * Hook for PATCH requests
+ */
+export function useApiPatch<TData = unknown, TVariables = unknown>(
+  url: string,
+  options?: Omit<UseMutationOptions<TData, ApiError, TVariables>, 'mutationFn'>
+) {
+  return useMutation<TData, ApiError, TVariables>({
+    mutationFn: (data) => httpPatch<TData, TVariables>(url, data),
     ...options,
   });
 }

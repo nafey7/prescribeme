@@ -5,7 +5,8 @@ from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from app.models import User, Doctor, Patient, RefreshToken
+import secrets
+from app.models import User, Doctor, Patient, RefreshToken, PasswordResetToken
 from app.schemas.auth import (
     SignUpRequest,
     LoginRequest,
@@ -20,6 +21,7 @@ from app.utils.auth import (
     generate_refresh_token,
 )
 from app.config.settings import settings
+from app.schemas.settings import ForgotPasswordRequest, ResetPasswordRequest
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -375,6 +377,47 @@ async def logout(
     )
     
     return {"message": "Logged out successfully"}
+
+
+@router.post("/forgot-password")
+async def forgot_password(body: ForgotPasswordRequest):
+    """
+    Request a password reset. Always returns the same message to avoid email enumeration.
+    When SMTP is not configured, the reset link is printed to server logs (development).
+    """
+    user = await User.find_one(User.email == str(body.email).strip().lower())
+    if user:
+        raw_token = secrets.token_urlsafe(32)
+        token_hash = hash_token(raw_token)
+        expires = datetime.utcnow() + timedelta(minutes=settings.password_reset_token_expire_minutes)
+        doc = PasswordResetToken(user=user, token_hash=token_hash, expires_at=expires)
+        await doc.insert()
+        reset_link = f"{settings.app_public_url.rstrip('/')}/reset-password?token={raw_token}"
+        if settings.smtp_host:
+            # Placeholder: integrate email sender in production
+            print(f"[password-reset] Would email {user.email}: {reset_link}")
+        else:
+            print(f"[password-reset] Dev reset link for {user.email}: {reset_link}")
+    return {"message": "If an account exists for that email, reset instructions were sent."}
+
+
+@router.post("/reset-password")
+async def reset_password(body: ResetPasswordRequest):
+    token_hash = hash_token(body.token)
+    doc = await PasswordResetToken.find_one(PasswordResetToken.token_hash == token_hash)
+    if not doc or doc.used_at is not None or doc.expires_at < datetime.utcnow():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token",
+        )
+    await doc.fetch_link(PasswordResetToken.user)
+    u = doc.user
+    u.password_hash = hash_password(body.new_password)
+    u.updated_at = datetime.utcnow()
+    await u.save()
+    doc.used_at = datetime.utcnow()
+    await doc.save()
+    return {"message": "Password has been reset. You can sign in with your new password."}
 
 
 @router.get("/me", response_model=UserResponse)

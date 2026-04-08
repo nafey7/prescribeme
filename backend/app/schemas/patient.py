@@ -16,6 +16,7 @@ class PatientListItemResponse(BaseModel):
     lastVisit: Optional[str] = None
     status: str  # active, inactive
     conditions: List[str] = []
+    allergies: List[str] = []
 
 
 class PatientProfileResponse(BaseModel):

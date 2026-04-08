@@ -7,6 +7,9 @@ Patients cannot access these routes - they will receive a 403 Forbidden error.
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from app.dependencies.auth import get_current_doctor
+from datetime import datetime
+from bson import ObjectId
+from beanie.operators import In
 from app.models import (
     User,
     Doctor,
@@ -14,6 +17,11 @@ from app.models import (
     Prescription,
     Condition,
     Allergy,
+    CareRelationship,
+)
+from app.schemas.prescription_requests import (
+    CreatePrescriptionRequest,
+    UpdatePrescriptionRequest,
 )
 from app.schemas import (
     PatientListItemResponse,
@@ -56,21 +64,10 @@ async def get_doctor_profile(
     }
 
 
-@router.get("/patients", response_model=list[PatientListItemResponse])
-async def list_patients(
-    current_user: User = Depends(get_current_doctor),
-    search: Optional[str] = Query(None)
-):
-    """
-    List all patients (doctor-only endpoint)
-    
-    Requires: Doctor role
-    Patients attempting to access this will receive 403 Forbidden.
-    """
-    query = Patient.find()
-    
-    patients_docs = await query.to_list()
-    
+async def _patient_list_items_for_docs(
+    patients_docs: list,
+    search: Optional[str],
+) -> list[PatientListItemResponse]:
     patients = []
     for patient_doc in patients_docs:
         await patient_doc.fetch_all_links()
@@ -90,7 +87,10 @@ async def list_patients(
             Condition.status == "active"
         ).to_list()
         conditions = [cond.name for cond in conditions_docs]
-        
+
+        allergies_docs = await Allergy.find(Allergy.patient.id == patient_doc.id).to_list()
+        allergies = [a.allergen for a in allergies_docs]
+
         patients.append(PatientListItemResponse(
             id=str(patient_doc.id),
             name=patient_user.full_name,
@@ -101,9 +101,54 @@ async def list_patients(
             lastVisit=patient_doc.last_visit.isoformat() if patient_doc.last_visit else None,
             status=patient_doc.status,
             conditions=conditions,
+            allergies=allergies,
         ))
-    
     return patients
+
+
+@router.get("/patients", response_model=list[PatientListItemResponse])
+async def list_patients(
+    current_user: User = Depends(get_current_doctor),
+    search: Optional[str] = Query(None),
+    scope: str = Query(
+        "mine",
+        description="'mine' = patients with a care relationship; 'all' = full directory (e.g. prescription picker)",
+    ),
+):
+    """
+    List patients. Default scope is patients linked to this doctor via care relationships.
+    Use scope=all for the full patient directory when creating a new prescription.
+    """
+    doctor = await get_doctor_from_user(current_user)
+
+    if scope == "all":
+        patients_docs = await Patient.find().to_list()
+    else:
+        rels = await CareRelationship.find(
+            CareRelationship.doctor.id == doctor.id
+        ).to_list()
+        patient_ids = []
+        for rel in rels:
+            await rel.fetch_link(CareRelationship.patient)
+            if rel.patient:
+                patient_ids.append(rel.patient.id)
+        if not patient_ids:
+            return []
+        patients_docs = await Patient.find(In(Patient.id, patient_ids)).to_list()
+
+    return await _patient_list_items_for_docs(patients_docs, search)
+
+
+async def _require_patient_access(doctor: Doctor, patient_doc: Patient) -> None:
+    rel = await CareRelationship.find_one(
+        CareRelationship.doctor.id == doctor.id,
+        CareRelationship.patient.id == patient_doc.id,
+    )
+    if not rel:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to this patient",
+        )
 
 
 @router.get("/patients/{patient_id}", response_model=PatientProfileResponse)
@@ -116,15 +161,21 @@ async def get_patient_details(
     
     Requires: Doctor role
     """
+    doctor = await get_doctor_from_user(current_user)
     try:
-        from bson import ObjectId
         patient_doc = await Patient.get(ObjectId(patient_id))
-    except:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Patient not found"
         )
-    
+    if not patient_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Patient not found"
+        )
+    await _require_patient_access(doctor, patient_doc)
+
     await patient_doc.fetch_all_links()
     patient_user = await patient_doc.user.fetch()
     
@@ -154,15 +205,21 @@ async def get_patient_prescriptions(
     
     Requires: Doctor role
     """
+    doctor = await get_doctor_from_user(current_user)
     try:
-        from bson import ObjectId
         patient_doc = await Patient.get(ObjectId(patient_id))
-    except:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Patient not found"
         )
-    
+    if not patient_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Patient not found"
+        )
+    await _require_patient_access(doctor, patient_doc)
+
     prescriptions_docs = await Prescription.find(
         Prescription.patient.id == patient_doc.id
     ).sort(-Prescription.prescribed_date).to_list()
@@ -198,15 +255,21 @@ async def get_patient_conditions(
     
     Requires: Doctor role
     """
+    doctor = await get_doctor_from_user(current_user)
     try:
-        from bson import ObjectId
         patient_doc = await Patient.get(ObjectId(patient_id))
-    except:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Patient not found"
         )
-    
+    if not patient_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Patient not found"
+        )
+    await _require_patient_access(doctor, patient_doc)
+
     conditions_docs = await Condition.find(
         Condition.patient.id == patient_doc.id
     ).sort(-Condition.diagnosed_date).to_list()
@@ -239,15 +302,21 @@ async def get_patient_allergies(
     
     Requires: Doctor role
     """
+    doctor = await get_doctor_from_user(current_user)
     try:
-        from bson import ObjectId
         patient_doc = await Patient.get(ObjectId(patient_id))
-    except:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Patient not found"
         )
-    
+    if not patient_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Patient not found"
+        )
+    await _require_patient_access(doctor, patient_doc)
+
     allergies_docs = await Allergy.find(
         Allergy.patient.id == patient_doc.id
     ).sort(-Allergy.diagnosed_date).to_list()
@@ -265,20 +334,133 @@ async def get_patient_allergies(
     return allergies
 
 
-@router.post("/prescriptions")
+@router.post("/prescriptions", status_code=status.HTTP_201_CREATED)
 async def create_prescription(
-    current_user: User = Depends(get_current_doctor)
+    body: CreatePrescriptionRequest,
+    current_user: User = Depends(get_current_doctor),
 ):
-    """
-    Create a new prescription (doctor-only endpoint)
-    
-    Requires: Doctor role
-    """
-    # TODO: Implement prescription creation logic
-    return {
-        "message": "Prescription created",
-        "doctor_id": str(current_user.id)
-    }
+    """Create a prescription and ensure a care relationship exists."""
+    doctor = await get_doctor_from_user(current_user)
+    try:
+        patient_doc = await Patient.get(ObjectId(body.patient_id))
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Patient not found",
+        )
+    if not patient_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Patient not found",
+        )
+
+    existing_rel = await CareRelationship.find_one(
+        CareRelationship.doctor.id == doctor.id,
+        CareRelationship.patient.id == patient_doc.id,
+    )
+    if not existing_rel:
+        await CareRelationship(doctor=doctor, patient=patient_doc).insert()
+
+    refills = body.refills or 0
+    presc = Prescription(
+        patient=patient_doc,
+        doctor=doctor,
+        medication=body.medication,
+        dosage=body.dosage,
+        frequency=body.frequency,
+        duration=body.duration,
+        instructions=body.instructions,
+        notes=body.notes,
+        refills=refills,
+        refills_remaining=refills,
+        status="active",
+        prescribed_date=datetime.utcnow(),
+    )
+    await presc.insert()
+    return {"id": str(presc.id), "message": "Prescription created"}
+
+
+@router.get("/prescriptions/{prescription_id}", response_model=PrescriptionHistoryItemResponse)
+async def get_doctor_prescription(
+    prescription_id: str,
+    current_user: User = Depends(get_current_doctor),
+):
+    doctor = await get_doctor_from_user(current_user)
+    try:
+        presc = await Prescription.get(ObjectId(prescription_id))
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Prescription not found",
+        )
+    await presc.fetch_all_links()
+    if not presc or presc.doctor.id != doctor.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Prescription not found",
+        )
+    patient_user = await presc.patient.user.fetch()
+    return PrescriptionHistoryItemResponse(
+        id=str(presc.id),
+        patientName=patient_user.full_name,
+        patientId=str(presc.patient.id),
+        medication=presc.medication,
+        dosage=presc.dosage,
+        frequency=presc.frequency,
+        duration=presc.duration,
+        prescribedDate=presc.prescribed_date.isoformat(),
+        status=presc.status,
+        prescribedBy=current_user.full_name,
+        instructions=presc.instructions,
+        notes=presc.notes,
+        refills=presc.refills,
+        refillsRemaining=presc.refills_remaining,
+    )
+
+
+@router.patch("/prescriptions/{prescription_id}")
+async def update_doctor_prescription(
+    prescription_id: str,
+    body: UpdatePrescriptionRequest,
+    current_user: User = Depends(get_current_doctor),
+):
+    doctor = await get_doctor_from_user(current_user)
+    try:
+        presc = await Prescription.get(ObjectId(prescription_id))
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Prescription not found",
+        )
+    await presc.fetch_all_links()
+    if not presc or presc.doctor.id != doctor.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Prescription not found",
+        )
+
+    update_data = body.model_dump(exclude_unset=True)
+    if "status" in update_data and update_data["status"]:
+        presc.status = update_data["status"]
+    if "medication" in update_data:
+        presc.medication = update_data["medication"]
+    if "dosage" in update_data:
+        presc.dosage = update_data["dosage"]
+    if "frequency" in update_data:
+        presc.frequency = update_data["frequency"]
+    if "duration" in update_data:
+        presc.duration = update_data["duration"]
+    if "instructions" in update_data:
+        presc.instructions = update_data["instructions"]
+    if "notes" in update_data:
+        presc.notes = update_data["notes"]
+    if "refills" in update_data and update_data["refills"] is not None:
+        presc.refills = update_data["refills"]
+    if "refills_remaining" in update_data and update_data["refills_remaining"] is not None:
+        presc.refills_remaining = update_data["refills_remaining"]
+    presc.updated_at = datetime.utcnow()
+    await presc.save()
+    return {"message": "Prescription updated", "id": str(presc.id)}
 
 
 @router.get("/prescriptions", response_model=list[PrescriptionHistoryItemResponse])
@@ -324,6 +506,10 @@ async def list_prescriptions(
             prescribedDate=presc.prescribed_date.isoformat(),
             status=presc.status,
             prescribedBy=current_user.full_name,
+            instructions=presc.instructions,
+            notes=presc.notes,
+            refills=presc.refills,
+            refillsRemaining=presc.refills_remaining,
         ))
     
     return prescriptions
